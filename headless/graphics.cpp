@@ -637,9 +637,20 @@ void GraphicsWindow::OnFrameDisplayed() {
             // shows up in the 2-vsync bucket, a slow one across all of them. "half" counts the
             // frames that came within one refresh of a 120 Hz output.
             static std::array<unsigned, 5> interval_hist{};
+            // H-01/FR-003: every present interval of the window in ms, reported as CSV
+            // with EDEN_VULKAN_FRAME for true frame-level percentiles. Static storage,
+            // one float store per frame; dev profile only (zero production overhead).
+            // 1024 covers a 5 s window past 200 FPS; beyond that `overflow` counts
+            // the dropped tail instead of wrapping.
+            static std::array<float, 1024> frame_ms{};
+            static unsigned frame_ms_count = 0, frame_ms_overflow = 0;
             const double interval_ms = (now - frame_sample_last) * 1000.0;
             ++interval_hist[interval_ms < 12.5 ? 4 : interval_ms < 20.0 ? 0 : interval_ms < 36.0 ? 1 :
                             interval_ms < 52.0 ? 2 : 3];
+            if (frame_ms_count < frame_ms.size())
+                frame_ms[frame_ms_count++] = static_cast<float>(interval_ms);
+            else
+                ++frame_ms_overflow;
 #endif
             frame_sample_last = now;
             if (now - frame_sample_start >= 5.0) {
@@ -654,6 +665,19 @@ void GraphicsWindow::OnFrameDisplayed() {
                 std::printf("EDEN_VULKAN_INTERVALS v1=%u v2=%u v3=%u v4plus=%u half=%u\n", interval_hist[0],
                             interval_hist[1], interval_hist[2], interval_hist[3], interval_hist[4]);
                 interval_hist = {};
+                // H-01c: the game's frame budget from its vsync clock (60000 for a
+                // 60 FPS title, 30000 at swap interval 2, FPS patches higher;
+                // display_refresh.h). Zero when unknown: budget-relative counts
+                // skip the window, absolute thresholds still apply.
+                const auto game_mhz = Display::game_millihertz.load(std::memory_order_relaxed);
+                const double budget_ms = game_mhz > 0 ? 1000000.0 / game_mhz : 0.0;
+                std::printf("EDEN_VULKAN_FRAMES n=%u overflow=%u budget_ms=%.2f ms=",
+                            frame_ms_count, frame_ms_overflow, budget_ms);
+                for (unsigned i = 0; i < frame_ms_count; ++i)
+                    std::printf("%s%.1f", i ? "," : "", static_cast<double>(frame_ms[i]));
+                std::puts("");
+                frame_ms_count = 0;
+                frame_ms_overflow = 0;
 #endif
                 Eden::Performance::ReportVulkan();
 #ifdef EDEN_DEV_PROFILE

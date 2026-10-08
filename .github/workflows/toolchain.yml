@@ -1,0 +1,53 @@
+name: ProsperoEden Toolchain
+
+# ENV-01: qualify the build environment without touching the developer's
+# Fedora/Bazzite host (master prompt section 13). First gate only: the
+# toolchain installs and `make toolchain` passes on ubuntu-26.04
+# (GA 2026-09-17), plus the dependency-free static checks. `make test`
+# and the H-01 development build are later gates on this same runner.
+#
+# Triggers follow the release workflow's philosophy (validate pull
+# requests; main builds nothing by itself) plus manual runs.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  toolchain:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The release build's canonical package list (docs/BUILDING.md):
+      # one source of truth, so this gate validates exactly what a
+      # release needs instead of a second hand-kept list.
+      - name: Install the build tools (tools/ci/ubuntu-packages.txt)
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2046 # one package name per word
+          sudo apt-get install --yes --no-install-recommends $(grep -v '^#' tools/ci/ubuntu-packages.txt)
+
+      - name: Verify toolchain
+        run: make toolchain
+
+      - name: Report available disk space
+        run: df -h
+
+  perf-static:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Dependency-free: plain python3, no Eden checkout, no PS5 SDK.
+      - name: Perf pipeline suite (tools/perf)
+        run: python3 -B tools/perf/test_perf.py
+
+      - name: H-01 frame-ring structural check
+        run: python3 -B tools/check-frame-ring.py
