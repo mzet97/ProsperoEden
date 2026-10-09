@@ -8,6 +8,9 @@ name: Dev PS5 build
 #
 # Artifacts (7 days): dist-dev/ (the test ZIP + SHA256SUMS) and build/symbols/ (the
 # unstripped executable, 30 days: crash reports are read with it). Nothing is published.
+# replay=off bakes dev-settings.txt (replay=off) into the package: the profile title
+# takes controller input instead of the timed replay (playable build, "-noreplay" in
+# the artifact name). Benchmarks (A/A, B-000) dispatch with replay=on (deterministic).
 # See docs/sdd/performance/10-console-run.md for install and log retrieval.
 # The actions are the Node 24 versions, pinned by commit, like release.yml.
 on:
@@ -17,6 +20,12 @@ on:
         description: 'Title the dev build boots (16 hex digits)'
         required: true
         default: '0100F2C0115B6000'
+      replay:
+        description: 'Timed input replay (on: deterministic benchmark; off: playable)'
+        required: true
+        default: 'on'
+        type: choice
+        options: [on, off]
 
 permissions:
   contents: read
@@ -124,10 +133,21 @@ jobs:
       - name: Build the development package
         id: build
         timeout-minutes: 315
+        env:
+          REPLAY: ${{ inputs.replay }}
         run: |
           ccache --zero-stats
           make dev DEV_TITLE="$TITLE_ID"
-          python3 -B tools/ci/make-dev-dist.py build/dev/PPSA99008 "$TITLE_ID-$SHORT_SHA"
+          # No dev-settings.txt ships by default; without the replay the profile
+          # title takes controller input (main.cpp:723). Delete the file on the
+          # console to restore the replay.
+          suffix=
+          if [[ $REPLAY == off ]]; then
+            printf 'replay=off\n' > build/dev/PPSA99008/dev-settings.txt
+            suffix=-noreplay
+          fi
+          echo "DIST_NAME=$TITLE_ID-$SHORT_SHA$suffix" >> "$GITHUB_ENV"
+          python3 -B tools/ci/make-dev-dist.py build/dev/PPSA99008 "$TITLE_ID-$SHORT_SHA$suffix"
 
       - name: Report disk, ccache and the linker
         if: always()
@@ -176,7 +196,7 @@ jobs:
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ProsperoEden-dev-${{ env.TITLE_ID }}-${{ env.SHORT_SHA }}
+          name: ProsperoEden-dev-${{ env.DIST_NAME }}
           path: dist-dev/
           if-no-files-found: error
           retention-days: 7
@@ -185,6 +205,6 @@ jobs:
       # runner is discarded after the job, so it is kept as an artifact; it is not published.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ProsperoEden-dev-${{ env.TITLE_ID }}-${{ env.SHORT_SHA }}-symbols
+          name: ProsperoEden-dev-${{ env.DIST_NAME }}-symbols
           path: build/symbols/
           retention-days: 30

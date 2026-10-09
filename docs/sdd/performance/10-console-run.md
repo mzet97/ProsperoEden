@@ -26,12 +26,15 @@ para diagnóstico de desempenho e de fechamentos do jogo (alvo atual: TotK,
 ## 2. Artefatos do CI
 
 Workflow `Dev PS5 build` (`.github/workflows/dev-ps5.yml`, manual: Actions > Run
-workflow, qualquer branch; `title_id` default TotK):
+workflow, qualquer branch; `title_id` default TotK; `replay` on/off, default on):
 
 - `ProsperoEden-dev-<TITLE>-<sha>.zip` (7 dias): pasta `PPSA99008`, entradas 0777.
 - `...-symbols` (30 dias): `build/symbols/ProsperoEden-dev-....elf`, o executável
   não-stripado — **obrigatório** para simbolizar crash reports
   (`python3 tools/symbolize-crash.py <report> <elf>`, `docs/BUILDING.md` § Crash reports).
+- `replay=off` grava `dev-settings.txt` (`replay=off`) dentro do pacote: build
+  jogável (controle físico; `-noreplay` no nome). Benchmarks (A/A, B-000) usam
+  `replay=on` (determinístico). Apagar o arquivo no console restaura o replay.
 
 Primeira execução num fork é fria (~1 h em 4 cores); depois usa os mesmos caches
 do workflow de release (~10 min).
