@@ -1,0 +1,190 @@
+name: Dev PS5 build
+
+# On-demand development package for console testing (make dev, which boots one title
+# with EDEN_DEV_PROFILE instrumentation, H-01 included): Actions > Dev PS5 build >
+# Run workflow, on any branch. It is manual on purpose: a cold run compiles everything
+# on four cores and takes about an hour; a warm one reuses the release workflow's
+# caches (same keys) and takes about ten minutes.
+#
+# Artifacts (7 days): dist-dev/ (the test ZIP + SHA256SUMS) and build/symbols/ (the
+# unstripped executable, 30 days: crash reports are read with it). Nothing is published.
+# See docs/sdd/performance/10-console-run.md for install and log retrieval.
+# The actions are the Node 24 versions, pinned by commit, like release.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      title_id:
+        description: 'Title the dev build boots (16 hex digits)'
+        required: true
+        default: '0100F2C0115B6000'
+
+permissions:
+  contents: read
+
+# A newer manual run on the same branch replaces the run in progress.
+concurrency:
+  group: dev-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    container:
+      image: ubuntu:26.04
+      # SDKs preinstalled on the runner image, mounted so the job can delete them: the build
+      # (Eden, Mesa, FFmpeg and their caches) needs the disk space.
+      volumes:
+        - /usr/share/dotnet:/host-free/dotnet
+        - /usr/local/lib/android:/host-free/android
+        - /opt/ghc:/host-free/ghc
+        - /usr/local/.ghcup:/host-free/ghcup
+        - /opt/hostedtoolcache:/host-free/toolcache
+        - /usr/local/share/boost:/host-free/boost
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CCACHE_MAXSIZE: 4G
+    steps:
+      - name: Free disk space
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          find /host-free -mindepth 2 -maxdepth 2 -exec rm -rf {} + 2>/dev/null || true
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Install git (for the checkout)
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends git ca-certificates
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate the title ID
+        env:
+          TITLE_ID: ${{ inputs.title_id }}
+        run: |
+          [[ $TITLE_ID =~ ^[0-9A-Fa-f]{16}$ ]] || { echo "Invalid title ID: $TITLE_ID" >&2; exit 1; }
+          echo "TITLE_ID=$TITLE_ID" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Install the build tools (tools/ci/ubuntu-packages.txt)
+        run: |
+          # shellcheck disable=SC2046 # one package name per word
+          apt-get install --yes --no-install-recommends $(grep -v '^#' tools/ci/ubuntu-packages.txt)
+          git config --global --add safe.directory '*'
+          make toolchain
+
+      - name: Locate the caches
+        run: |
+          # Beside the checkout, on the runner's disk; the paths stay the same between runs.
+          cache_root=$(dirname "$GITHUB_WORKSPACE")/ci-cache
+          mkdir -p "$cache_root"
+          {
+            echo "CACHE_ROOT=$cache_root"
+            echo "RADV_NATIVE=$(dirname "$GITHUB_WORKSPACE")/mihawk-vulkan-review/.deps/native"
+            echo "PROSPEROEDEN_DEPS_CACHE=$cache_root/downloads"
+            echo "CCACHE_DIR=$cache_root/ccache"
+            echo "XDG_CACHE_HOME=$cache_root/xdg"
+            echo "JOBS=$(nproc)"
+            echo "RADV_BUILD_JOBS=$(nproc)"
+          } >> "$GITHUB_ENV"
+
+      - name: Restore downloads
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.CACHE_ROOT }}/downloads
+          key: downloads-${{ hashFiles('tools/deps.json') }}
+
+      - name: Fetch dependencies
+        run: make deps
+
+      # After `make deps`: a restored RADV folder would otherwise stand in for the git checkout
+      # it lives in, and deps.py would not fetch that checkout. With the driver go the Payload
+      # SDK and zlib its build sets up beside it: the final link takes libraries from that SDK.
+      - name: Restore the RADV driver
+        id: radv
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ${{ env.RADV_NATIVE }}/radv-release
+            ${{ env.RADV_NATIVE }}/ps5-payload-sdk
+            ${{ env.RADV_NATIVE }}/zlib
+            build/radv-isolated
+          key: radv-2-${{ hashFiles('tools/deps.json', 'tools/patch-radv-wsi.py', 'tools/build-radv-dependencies.sh', 'tools/isolate-radv.py', 'tools/ci/ubuntu-packages.txt') }}
+
+      - name: Restore ccache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.CACHE_ROOT }}/ccache
+          key: ccache-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-
+
+      - name: Build the development package
+        id: build
+        timeout-minutes: 315
+        run: |
+          ccache --zero-stats
+          make dev DEV_TITLE="$TITLE_ID"
+          python3 -B tools/ci/make-dev-dist.py build/dev/PPSA99008 "$TITLE_ID-$SHORT_SHA"
+
+      - name: Report disk, ccache and the linker
+        if: always()
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          ccache --show-stats || true
+          "$(dirname "$GITHUB_WORKSPACE")/ps5-native-app-boilerplate/.deps/native/ps5-payload-sdk/bin/prospero-lld" --version || true
+
+      - name: Save ccache
+        if: always() && (github.event_name != 'pull_request' || steps.build.outcome != 'success')
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.CACHE_ROOT }}/ccache
+          key: ccache-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save the RADV driver
+        if: always() && steps.radv.outputs.cache-hit != 'true' && hashFiles('build/radv-isolated/libvulkan_radeon.ps5.a') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ${{ env.RADV_NATIVE }}/radv-release
+            ${{ env.RADV_NATIVE }}/ps5-payload-sdk
+            ${{ env.RADV_NATIVE }}/zlib
+            build/radv-isolated
+          key: radv-2-${{ hashFiles('tools/deps.json', 'tools/patch-radv-wsi.py', 'tools/build-radv-dependencies.sh', 'tools/isolate-radv.py', 'tools/ci/ubuntu-packages.txt') }}
+
+      # tools/ci/make-dev-dist.py writes every entry as 0777 (the console only starts an app whose
+      # files are open to all); this looks at the finished file once more.
+      - name: Check the ZIP and its checksum
+        run: |
+          set -euo pipefail
+          cd dist-dev
+          python3 - ProsperoEden-dev-*.zip <<'PY'
+          import sys, zipfile
+          assert len(sys.argv) == 2, f"expected one ZIP: {sys.argv[1:]}"
+          archive = sys.argv[1]
+          with zipfile.ZipFile(archive) as z:
+              assert z.testzip() is None, "damaged entry"
+              names = z.namelist()
+              assert "PPSA99008/eboot.bin" in names, "no eboot.bin"
+              wrong = [i.filename for i in z.infolist() if (i.external_attr >> 16) & 0o777 != 0o777]
+              assert not wrong, f"entries not stored as 0777: {wrong[:3]}"
+              print(f"{archive}: {len(names)} entries, all 0777")
+          PY
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ProsperoEden-dev-${{ env.TITLE_ID }}-${{ env.SHORT_SHA }}
+          path: dist-dev/
+          if-no-files-found: error
+          retention-days: 7
+
+      # The unstripped executable that reads this build's crash reports (docs/BUILDING.md). The
+      # runner is discarded after the job, so it is kept as an artifact; it is not published.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ProsperoEden-dev-${{ env.TITLE_ID }}-${{ env.SHORT_SHA }}-symbols
+          path: build/symbols/
+          retention-days: 30
