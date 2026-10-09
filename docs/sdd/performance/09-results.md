@@ -381,11 +381,15 @@ Optimization ID: DEV-BUILD (Gate 2b: build dev PS5 p/ TotK no console)
 Subsystem: CI/build + instrumentação H-01
 Hypothesis: o workflow Dev PS5 build compila `make dev` (EDEN_DEV_PROFILE+H-01)
   no CI e entrega ZIP instalável + símbolos p/ diagnóstico no console.
-Evidence: run pendente (branch ci/dev-ps5-totk; workflow_dispatch,
-  title_id 0100F2C0115B6000). Runbook em 10-console-run.md.
-Baseline commit: 0602218 (main pós-PR #2). Candidate: branch ci/dev-ps5-totk.
+Evidence: run 37980829180 (main 4306984, workflow_dispatch TotK) —
+  status completed, conclusion success, ~38 min (caches de downloads/RADV
+  reaproveitados do PR #3; ccache frio). Artefatos: ZIP de teste
+  ProsperoEden-dev-0100F2C0115B6000-4306984 (38,5 MB; check 0777 +
+  eboot.bin + SHA256 OK) + symbols (77,9 MB) p/ symbolize-crash.
+  H-01 compila sob EDEN_DEV_PROFILE no alvo PS5. Runbook 10-console-run.md.
+Baseline commit: 0602218 (main pós-PR #2). Candidate: 4306984 (main pós-PR #3).
 Environment: GitHub-hosted ubuntu-24.04 + container ubuntu:26.04 (x64).
-Decision: REQUIRES_HARDWARE_VALIDATION (aguardar CI verde + run no console)
+Decision: ACCEPTED (Gate 2b CI verde; runs no console seguem pendentes)
 Rollback procedure: n/a (workflow manual; nada publica)
 ```
 
