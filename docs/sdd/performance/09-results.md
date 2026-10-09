@@ -40,7 +40,8 @@ Rollback procedure: switch ou revert do commit
 | H-01c | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | `budget_ms` no marcador + contagens relativas + share over-budget |
 | H-01d | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | over_budget→INFO diagnóstico, global `inconclusive`, share 2x, notas de relatório |
 | ENV-01-RUN | 2026-10-08 | CI/ambiente | ACCEPTED (Gate 1 verde) | run 37858755115 success: toolchain + perf-static (49 testes, check H-01) |
-| H-01e | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | 16 threads (Codex+Copilot) → 12 correções; suite 61/61; push pendente |
+| H-01e | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | 16 threads → 12 correções; suite 61/61; merged em 00a0eef |
+| GATE2A | 2026-10-09 | CI/ambiente | ACCEPTED (make-test verde) | run 37925538267: host build + suítes PASS em 26 min; PR #1 merged |
 
 ## Registros
 
@@ -341,6 +342,23 @@ Compatibility risks: renomeação v1_share→within_vsync_share (relatórios
   locais apenas); overall([]) agora inconclusive (inalcançável em uso).
 Decision: REQUIRES_HARDWARE_VALIDATION (push + CI + compilação + console)
 Rollback procedure: revert dos hunks por arquivo.
+```
+
+```text
+Optimization ID: GATE2A (job make-test no CI + merge PR #1)
+Subsystem: CI/ambiente
+Hypothesis: `make deps` + `make test` passam em ubuntu-26.04.
+Evidence: run 37925538267 (push main pós-merge, 2026-10-09) —
+  conclusion success; job make-test 11:44:33→12:10:58 (~26 min):
+  host build clang-18 + todas as suítes PASS (RomFS, fiber, profiles,
+  mods, SRC/PCM, pad applet — zero FAIL fora probes de feature CMake).
+  PR #1 merged em 00a0eef (2 commits, 31 arquivos, +3868/-4).
+  Nota: commit 4d8e543 incluiu .vscode/settings.json com caminho
+  absoluto desta máquina — candidato a remoção em follow-up.
+Baseline commit: 868669f. Candidate: 00a0eef (main).
+Environment: GitHub-hosted ubuntu-26.04 (x64).
+Decision: ACCEPTED (Gate 2a verde; próximo: Gate 2b build dev PS5)
+Rollback procedure: n/a (CI verde em main; revert via PR se preciso)
 ```
 
 ## Baseline no console (protocolo executável, 02 §3)
