@@ -22,7 +22,7 @@ benchmark A/B reproduzível, testes de correção e registro em
 | 06-test-strategy.md | suítes existentes + novos testes | pronto |
 | 07-risk-register.md | riscos e mitigações | pronto |
 | 08-implementation-plan.md | fases, gates e ordem de execução | pronto |
-| 09-results.md | registro de experimentos | 10 registros (+H-01e review round); nenhum A/B numérico ainda |
+| 09-results.md | registro de experimentos | 11 registros (+GATE2A); PR #1 merged; nenhum A/B numérico ainda |
 
 ADRs em `docs/adr/ADR-00X-*.md`.
 
@@ -54,10 +54,10 @@ ADRs em `docs/adr/ADR-00X-*.md`.
   testado no host (stdlib apenas, sem dependências): 61 testes verdes
   (H-01e: warmup/run, deltas c/ fronteira, per-interval, gate c/
   evidência, tipos, banda, p99.9, sessão C++, vsync+half).
-- H-01 estático aprovado em revisão; Gate 1 verde no CI (run
-  37858755115, PR #1); job Gate 2a (`make-test`) pronto no worktree
-  aguardando push autorizado; produção inalterada; otimizações JIT/Vulkan
-  congeladas até CI verde + H-01 compilar + A/A + B-000 (08).
+- PR #1 merged em main (00a0eef); Gates 1 e 2a verdes no CI
+  (toolchain + perf-static + make-test ~26 min); próximo: Gate 2b
+  (build dev PS5 compila H-01 sob EDEN_DEV_PROFILE); produção
+  inalterada; otimizações JIT/Vulkan seguem congeladas até A/A + B-000.
 
 ## Convenções de evidência
 
