@@ -23,8 +23,8 @@
 - [x] Gate 2a: job `make-test` verde — run 37925538267 success
   (host build + suítes PASS, ~26 min). PR #1 merged em 00a0eef.
 - [ ] Gate 2b: build dev PS5 com H-01 (teste real de compilação do anel
-  sob EDEN_DEV_PROFILE; release não o compila). Requer job CI com
-  Payload SDK + RADV (pesado, horas) ou build manual qualificado.
+  sob EDEN_DEV_PROFILE; release não o compila). EM ANDAMENTO: workflow
+  manual `Dev PS5 build` (branch ci/dev-ps5-totk, TotK) + runbook 10.
 - [ ] Gate 3: B-000 com calibração A/A prévia (mesmo binário × ele mesmo;
   se |Δ| A/A excede ±2% com frequência, a banda não é critério confiável —
   alargar banda ou ampliar runs antes de qualquer A/B).

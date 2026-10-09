@@ -42,6 +42,7 @@ Rollback procedure: switch ou revert do commit
 | ENV-01-RUN | 2026-10-08 | CI/ambiente | ACCEPTED (Gate 1 verde) | run 37858755115 success: toolchain + perf-static (49 testes, check H-01) |
 | H-01e | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | 16 threads → 12 correções; suite 61/61; merged em 00a0eef |
 | GATE2A | 2026-10-09 | CI/ambiente | ACCEPTED (make-test verde) | run 37925538267: host build + suítes PASS em 26 min; PR #1 merged |
+| PR2-RUN | 2026-10-09 | CI/ambiente | ACCEPTED (3/3 jobs) | run 37936772765 success: docs GATE2A; toolchain+perf-static+make-test |
 
 ## Registros
 
@@ -359,6 +360,33 @@ Baseline commit: 868669f. Candidate: 00a0eef (main).
 Environment: GitHub-hosted ubuntu-26.04 (x64).
 Decision: ACCEPTED (Gate 2a verde; próximo: Gate 2b build dev PS5)
 Rollback procedure: n/a (CI verde em main; revert via PR se preciso)
+```
+
+```text
+Optimization ID: PR2-RUN (CI do PR #2, docs GATE2A)
+Subsystem: CI/ambiente
+Hypothesis: o workflow passa numa branch docs-only (3 arquivos).
+Evidence: run 37936772765 (PR #2, commit abca461) — status completed,
+  conclusion success; jobs toolchain/performance-static/make-test 3/3
+  success (perf-static em segundos; make-test = host build
+  completo + suítes, ~26 min, sem falhas).
+Baseline commit: 00a0eef (main). Candidate: abca461 (PR #2, docs-only).
+Environment: GitHub-hosted ubuntu-26.04 (x64).
+Decision: ACCEPTED (PR #2 pronto p/ merge; merge é ação do autor)
+Rollback procedure: n/a (branch deletável; nada em main)
+```
+
+```text
+Optimization ID: DEV-BUILD (Gate 2b: build dev PS5 p/ TotK no console)
+Subsystem: CI/build + instrumentação H-01
+Hypothesis: o workflow Dev PS5 build compila `make dev` (EDEN_DEV_PROFILE+H-01)
+  no CI e entrega ZIP instalável + símbolos p/ diagnóstico no console.
+Evidence: run pendente (branch ci/dev-ps5-totk; workflow_dispatch,
+  title_id 0100F2C0115B6000). Runbook em 10-console-run.md.
+Baseline commit: 0602218 (main pós-PR #2). Candidate: branch ci/dev-ps5-totk.
+Environment: GitHub-hosted ubuntu-24.04 + container ubuntu:26.04 (x64).
+Decision: REQUIRES_HARDWARE_VALIDATION (aguardar CI verde + run no console)
+Rollback procedure: n/a (workflow manual; nada publica)
 ```
 
 ## Baseline no console (protocolo executável, 02 §3)
