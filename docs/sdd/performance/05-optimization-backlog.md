@@ -11,8 +11,9 @@ sessão — sem PS5 no ambiente.
   P50/P95/P99/P99.9 reais e contagem de frames acima do orçamento.
 - Gargalo: CEGO — hoje só há fps médio + worst por janela de 5 s e 5
   baldes (`graphics.cpp:639-656`); percentis são impossíveis [CONFIRMED gap].
-- Proposta: histograma/anel por frame em `graphics.cpp`, emitido com
-  `EDEN_VULKAN_FRAME`, desligável, sem alocação no caminho quente.
+- Proposta: histograma/anel por frame em `graphics.cpp`, emitido como
+  `EDEN_VULKAN_FRAMES` junto ao `EDEN_VULKAN_FRAME`, desligável, sem
+  alocação no caminho quente.
 - Riscos: overhead por present; mitigação: anel estático + gate NFR-002.
 - Benchmark: overhead medido por `EDEN_PERF_CLOCK_READ` + A/B on/off.
 - Aceite: distribuições batem com série sintética; `check-performance.py` verde.

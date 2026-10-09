@@ -8,8 +8,8 @@ Modules: `collect.py` (log → JSONL), `analyze.py` (JSONL → stats),
 `frame_samples.py` (real-sample distributions, H-01 summaries),
 `compare.py` (CLI + reports) over `compare_metrics.py` (verdict
 engine) and `computed_metrics.py` (multi-field readers),
-`test_perf.py` running `test_collect.py`, `test_analyze.py`
-and `test_compare.py`.
+`test_perf.py` running `test_collect.py`, `test_analyze.py`,
+`test_compare.py`, `test_frames.py` and `test_pipeline.py`.
 
 ## Usage
 
@@ -39,13 +39,20 @@ python3 tools/perf/test_perf.py
 
 - Cumulative markers (`EDEN_DEV_GPU/GUEST`, `EDEN_VULKAN_COST`,
   `EDEN_PERF_PROGRESS/JIT`) enter **only as deltas** between consecutive
-  reports; counter resets skip the interval instead of going negative.
+  reports of the same input execution; counter resets and file/run
+  boundaries skip the interval instead of fabricating one.
 - Overlapping series are **never summed** (each Vulkan API keeps its own
   totals; `performance.h` forbids summing wall times as frame time).
-- Totals compare **per 5 s window** across runs; startup-skewed counters
-  (JIT compilations) report as info, never as gate verdicts.
+- Totals compare **per measured delta interval** across runs, never raw;
+  startup-skewed counters (JIT compilations) report as info, never as
+  gate verdicts.
+- `--warmup-windows N` drops the first N windows of each input execution
+  from windows, frame samples, buckets and every delta numerator.
+- Required fields are type-checked (finite numbers, non-empty names);
+  mistyped records are incomplete and excluded, never interpolated.
+- No usable critical measurement means `inconclusive`, never `pass`.
 - Percentiles come **only from real samples**. `EDEN_VULKAN_FRAMES`
-  (H-01) yields frame-level p50/p95/p99, budget-relative counts
+  (H-01) yields frame-level p50/p95/p99/p99.9, budget-relative counts
   (`over_budget`, `over_2x_budget` vs each window's `budget_ms`) and
   absolute thresholds as additional info; without it, fps/worst
   distributions stay window-level and are labelled so.

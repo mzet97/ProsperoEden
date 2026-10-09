@@ -22,7 +22,7 @@ benchmark A/B reproduzível, testes de correção e registro em
 | 06-test-strategy.md | suítes existentes + novos testes | pronto |
 | 07-risk-register.md | riscos e mitigações | pronto |
 | 08-implementation-plan.md | fases, gates e ordem de execução | pronto |
-| 09-results.md | registro de experimentos | 8 registros (ENV-00/01, H-01, H-01a/b/c/d, H-07); nenhum A/B numérico ainda |
+| 09-results.md | registro de experimentos | 10 registros (+H-01e review round); nenhum A/B numérico ainda |
 
 ADRs em `docs/adr/ADR-00X-*.md`.
 
@@ -51,11 +51,12 @@ ADRs em `docs/adr/ADR-00X-*.md`.
   não há PS5 conectado ao ambiente. Todas as medições nativas estão
   marcadas como pendentes em 02 e 09.
 - `tools/perf/` criado com importação, análise e comparação de logs,
-  testado no host (stdlib apenas, sem dependências): 49 testes verdes
-  (H-01d: over_budget diagnóstico, global `inconclusive`, share 2x,
-  proveniência nos relatórios).
-- H-01 estático aprovado em revisão; ENV-01 (CI ubuntu-26.04) aguarda
-  primeira run (requer push); produção inalterada; otimizações JIT/Vulkan
+  testado no host (stdlib apenas, sem dependências): 61 testes verdes
+  (H-01e: warmup/run, deltas c/ fronteira, per-interval, gate c/
+  evidência, tipos, banda, p99.9, sessão C++, vsync+half).
+- H-01 estático aprovado em revisão; Gate 1 verde no CI (run
+  37858755115, PR #1); job Gate 2a (`make-test`) pronto no worktree
+  aguardando push autorizado; produção inalterada; otimizações JIT/Vulkan
   congeladas até CI verde + H-01 compilar + A/A + B-000 (08).
 
 ## Convenções de evidência

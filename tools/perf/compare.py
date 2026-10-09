@@ -14,6 +14,7 @@ JSON report (--json FILE). Exit 0 on pass, 1 on regression,
 module owns the CLI and the report rendering. Stdlib only.
 """
 import json
+import math
 import sys
 from collections.abc import Iterator
 
@@ -22,8 +23,8 @@ from compare_metrics import (
     MetricResult,
     compare_reports,
     overall,
-    windows_n,
 )
+from computed_metrics import windows_n
 
 
 def frames_line(tag: str, stats: dict) -> str:
@@ -146,12 +147,7 @@ def main(argv: list[str]) -> int:
         elif arg == "--json":
             json_path = next_arg(args, arg)
         elif arg == "--triage-band":
-            raw = next_arg(args, arg)
-            try:
-                band = float(raw)
-            except ValueError:
-                print(f"compare.py: bad --triage-band {raw!r}", file=sys.stderr)
-                return 2
+            band = triage_band_or_exit(next_arg(args, arg))
         elif arg == "--init-baseline":
             rest = list(args)
             if len(rest) != 2:
@@ -212,6 +208,18 @@ def next_arg(args: Iterator[str], flag: str) -> str:
     except StopIteration:
         print(f"compare.py: {flag} needs a value", file=sys.stderr)
         raise SystemExit(2) from None
+
+
+def triage_band_or_exit(raw: str) -> float:
+    """Parse --triage-band; negative/non-finite values exit 2 (H-01e)."""
+    try:
+        band = float(raw)
+    except ValueError:
+        band = float("nan")
+    if not math.isfinite(band) or band < 0:
+        print(f"compare.py: bad --triage-band {raw!r}", file=sys.stderr)
+        raise SystemExit(2) from None
+    return band
 
 
 if __name__ == "__main__":

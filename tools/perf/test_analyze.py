@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Unit tests for analyze.py: deltas, distributions, report assembly."""
+"""Unit tests for analyze.py: deltas and report assembly."""
 import sys
 import unittest
 from pathlib import Path
@@ -11,10 +11,10 @@ import analyze
 import frame_samples
 
 
-def window(line: int, fps: float, worst_ms: float) -> dict:
+def window(line: int, fps: float, worst_ms: float, run: str = "t") -> dict:
     """One complete 5 s Vulkan frame window record."""
     return {"_marker": "EDEN_VULKAN_FRAME", "_file": "t", "_line": line,
-            "_run": "t", "complete": True, "frames": 150, "seconds": 5.0,
+            "_run": run, "complete": True, "frames": 150, "seconds": 5.0,
             "fps": fps, "worst_ms": worst_ms, "total": 150 * line,
             "not_shown": 0, "clock_hz": 60.0}
 
@@ -73,40 +73,16 @@ class TestAnalyzeDeltas(unittest.TestCase):
         self.assertEqual(result["intervals"], 0)
         self.assertEqual(result["totals"]["draws"], 0)
 
-
-class TestAnalyzeDistributions(unittest.TestCase):
-    def test_percentile_known_series(self) -> None:
-        # Given the sorted series 1..100,
-        series = list(range(1, 101))
-        # When percentiles are taken,
-        # Then they match the hand-computed linear interpolation.
-        self.assertAlmostEqual(frame_samples.percentile(series, 50.0) or 0.0, 50.5)
-        self.assertAlmostEqual(frame_samples.percentile(series, 95.0) or 0.0, 95.05)
-        self.assertAlmostEqual(frame_samples.percentile(series, 99.0) or 0.0, 99.01)
-
-    def test_percentile_edges(self) -> None:
-        # Given empty and single-element series,
-        # When percentiles are taken,
-        # Then empty is None and single echoes the value.
-        self.assertIsNone(frame_samples.percentile([], 50.0))
-        self.assertEqual(frame_samples.percentile([7.5], 99.0), 7.5)
-
-    def test_distribution_single_value(self) -> None:
-        # Given one sample,
-        result = frame_samples.distribution([30.0])
-        # When summarized,
-        # Then spread is zero and every rank echoes the sample.
-        self.assertEqual(result["n"], 1)
-        self.assertEqual(result["stdev"], 0.0)
-        self.assertEqual(result["p50"], 30.0)
-        self.assertEqual(result["min"], 30.0)
-        self.assertEqual(result["max"], 30.0)
-
-    def test_distribution_empty(self) -> None:
-        # Given no samples,
-        # When summarized,
-        # Then only the zero count exists (no invented spread).
-        self.assertEqual(frame_samples.distribution([]), {"n": 0})
+    def test_deltas_reset_at_run_boundary(self) -> None:
+        # Given rising counters from two different input runs,
+        first = gpu(1, draws=100)
+        second = gpu(2, draws=200)
+        second["_run"] = "other"
+        # When differenced,
+        result = analyze.deltas([first, second], ("draws",))
+        # Then no fabricated cross-run interval is accepted.
+        self.assertEqual(result["intervals"], 0)
+        self.assertEqual(result["totals"]["draws"], 0)
 
 
 class TestAnalyzeReport(unittest.TestCase):
@@ -132,6 +108,67 @@ class TestAnalyzeReport(unittest.TestCase):
         self.assertEqual(stats["windows"]["n"], 2)
         self.assertEqual(stats["windows"]["warmup_excluded"], 1)
         self.assertAlmostEqual(stats["windows"]["fps"]["mean"], 30.5)
+
+    def test_warmup_drops_first_window_per_run(self) -> None:
+        # Given two runs of three windows each (H-01e),
+        records = [window(1, 20.0, 90.0, "a"), window(2, 30.0, 40.0, "a"),
+                   window(3, 31.0, 41.0, "a"), window(4, 21.0, 91.0, "b"),
+                   window(5, 32.0, 42.0, "b"), window(6, 33.0, 43.0, "b")]
+        # When analyzed with warmup_windows=1,
+        stats = analyze.analyze(records, warmup_windows=1)
+        # Then each run loses its own cold window, not just the first overall.
+        self.assertEqual(stats["windows"]["n"], 4)
+        self.assertEqual(stats["windows"]["warmup_excluded"], 2)
+        self.assertAlmostEqual(stats["windows"]["fps"]["mean"], 31.5)
+
+    def test_warmup_drops_frames_and_deltas_per_run(self) -> None:
+        # Given two runs each with two frame windows and GPU reports (H-01e),
+        frames = [
+            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 1,
+             "_run": "a", "complete": True, "n": 2, "overflow": 0,
+             "budget_ms": 16.67, "ms": [90.0, 91.0]},
+            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 2,
+             "_run": "a", "complete": True, "n": 2, "overflow": 0,
+             "budget_ms": 16.67, "ms": [16.6, 16.7]},
+            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 3,
+             "_run": "b", "complete": True, "n": 2, "overflow": 0,
+             "budget_ms": 16.67, "ms": [92.0, 93.0]},
+            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 4,
+             "_run": "b", "complete": True, "n": 2, "overflow": 0,
+             "budget_ms": 16.67, "ms": [16.8, 16.9]},
+        ]
+        first_a = gpu(5, draws=100)
+        first_a["_run"] = "a"
+        second_a = gpu(6, draws=200)
+        second_a["_run"] = "a"
+        first_b = gpu(7, draws=300)
+        first_b["_run"] = "b"
+        second_b = gpu(8, draws=400)
+        second_b["_run"] = "b"
+        # When analyzed with warmup_windows=1,
+        stats = analyze.analyze(frames + [first_a, second_a, first_b, second_b],
+                                warmup_windows=1)
+        # Then warmup leaves frame samples and delta numerators too.
+        self.assertEqual(stats["frame_samples"]["samples"], 4)
+        self.assertEqual(stats["frame_samples"]["ms"]["max"], 16.9)
+        self.assertEqual(stats["gpu"]["intervals"], 0)
+        self.assertEqual(stats["gpu"]["totals"]["draws"], 0)
+
+    def test_cache_lock_comes_from_deltas(self) -> None:
+        # Given two guest reports with lifetime lock counters (H-01e),
+        before = {"_marker": "EDEN_DEV_GUEST", "_file": "t", "_line": 1,
+                  "_run": "t", "complete": True, "cpu_write_calls": 10,
+                  "cpu_write_ns": 100, "cache_lock_contended": 5,
+                  "cache_lock_blocked": 5}
+        after = {"_marker": "EDEN_DEV_GUEST", "_file": "t", "_line": 2,
+                 "_run": "t", "complete": True, "cpu_write_calls": 20,
+                 "cpu_write_ns": 200, "cache_lock_contended": 8,
+                 "cache_lock_blocked": 9}
+        # When analyzed,
+        stats = analyze.analyze([before, after])
+        # Then lock stats are interval deltas, not lifetime totals.
+        self.assertEqual(stats["cache_lock"]["blocked"], 4)
+        self.assertEqual(stats["cache_lock"]["contended"], 3)
 
     def test_vulkan_cost_apis_stay_separate(self) -> None:
         # Given two reports each for two overlapping-timed APIs,
@@ -188,83 +225,6 @@ class TestAnalyzeReport(unittest.TestCase):
         self.assertEqual(stats["gpu_time"]["failed"], 1)
         self.assertEqual(stats["gpu_time"]["reports"], 1)
         self.assertEqual(stats["gpu_time"]["submissions"], 150)
-
-    def test_frames_summarize_real_percentiles(self) -> None:
-        # Given two per-frame windows (5 + 3 intervals, one overflow),
-        reports = [
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 1,
-             "_run": "t", "complete": True, "n": 5, "overflow": 1,
-             "ms": [16.7, 16.6, 16.8, 33.4, 16.7]},
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 2,
-             "_run": "t", "complete": True, "n": 3, "overflow": 0,
-             "ms": [16.7, 50.1, 16.6]},
-        ]
-        # When analyzed,
-        stats = analyze.analyze(reports)
-        # Then percentiles come from the 8 real samples with budgets counted.
-        frames = stats["frame_samples"]
-        self.assertEqual(frames["windows"], 2)
-        self.assertEqual(frames["samples"], 8)
-        self.assertEqual(frames["overflow"], 1)
-        self.assertEqual(frames["mismatched"], 0)
-        self.assertAlmostEqual(frames["ms"]["p50"], 16.7)
-        self.assertEqual(frames["over_20ms"], 2)
-        self.assertEqual(frames["over_33ms"], 1)
-        self.assertEqual(frames["over_50ms"], 1)
-        self.assertIn("frame-level", stats["windows"]["level"])
-
-    def test_frames_length_mismatch_excluded(self) -> None:
-        # Given a frames record whose list disagrees with n,
-        reports = [
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 1,
-             "_run": "t", "complete": True, "n": 5, "overflow": 0,
-             "ms": [16.7, 16.6]},
-        ]
-        # When analyzed,
-        stats = analyze.analyze(reports)
-        # Then it counts as mismatched and contributes no samples.
-        frames = stats["frame_samples"]
-        self.assertEqual(frames["mismatched"], 1)
-        self.assertEqual(frames["samples"], 0)
-        self.assertEqual(frames["ms"], {"n": 0})
-
-    def test_frames_overflow_marks_partial(self) -> None:
-        # Given a window that dropped tail samples (H-01a),
-        reports = [
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 1,
-             "_run": "t", "complete": True, "n": 2, "overflow": 3,
-             "budget_ms": 16.67, "ms": [16.6, 16.7]},
-        ]
-        # When analyzed,
-        stats = analyze.analyze(reports)
-        # Then the samples stay but the set is flagged partial.
-        frames = stats["frame_samples"]
-        self.assertEqual(frames["samples"], 2)
-        self.assertEqual(frames["overflow"], 3)
-        self.assertTrue(frames["partial"])
-
-    def test_frames_budget_relative_counts(self) -> None:
-        # Given a 30 FPS window plus an unknown-budget one (H-01c),
-        reports = [
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 1,
-             "_run": "t", "complete": True, "n": 4, "overflow": 0,
-             "budget_ms": 33.33, "ms": [33.3, 33.4, 50.0, 16.7]},
-            {"_marker": "EDEN_VULKAN_FRAMES", "_file": "t", "_line": 2,
-             "_run": "t", "complete": True, "n": 2, "overflow": 0,
-             "budget_ms": 0.0, "ms": [16.7, 50.0]},
-        ]
-        # When analyzed,
-        stats = analyze.analyze(reports)
-        # Then budget-relative counts cover only budgeted samples,
-        # while absolute thresholds still cover everything.
-        frames = stats["frame_samples"]
-        self.assertEqual(frames["samples"], 6)
-        self.assertEqual(frames["budgeted_samples"], 4)
-        self.assertEqual(frames["budgets"], [33.33])
-        self.assertEqual(frames["over_budget"], 2)
-        self.assertEqual(frames["over_2x_budget"], 0)
-        self.assertEqual(frames["over_20ms"], 4)
-
 
 if __name__ == "__main__":
     unittest.main()

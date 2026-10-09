@@ -39,6 +39,8 @@ Rollback procedure: switch ou revert do commit
 | H-01b | 2026-10-08 | instrumentação | ACCEPTED (docs-only) | intervalos = produção guest via Composite (incl. skipped); sem mudança de código |
 | H-01c | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | `budget_ms` no marcador + contagens relativas + share over-budget |
 | H-01d | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | over_budget→INFO diagnóstico, global `inconclusive`, share 2x, notas de relatório |
+| ENV-01-RUN | 2026-10-08 | CI/ambiente | ACCEPTED (Gate 1 verde) | run 37858755115 success: toolchain + perf-static (49 testes, check H-01) |
+| H-01e | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | 16 threads (Codex+Copilot) → 12 correções; suite 61/61; push pendente |
 
 ## Registros
 
@@ -266,6 +268,79 @@ Compatibility risks: nenhum (formato JSON ganha campo "blocked";
   exit 3 é código novo, documentado no README/CLI)
 Decision: REQUIRES_HARDWARE_VALIDATION (budget por título + A/A + B-000)
 Rollback procedure: revert dos hunks (volta overall 2-way e INFO→veredito)
+```
+
+```text
+Optimization ID: ENV-01-RUN (Gate 1: primeira execução do CI)
+Subsystem: CI/ambiente
+Hypothesis: o workflow toolchain.yml passa em ubuntu-26.04 no PR.
+Evidence: run 37858755115 (PR #1, branch sdd/perf-baseline-h01,
+  commit 5ac3cd6) — status completed, conclusion success.
+  perf-static: "Ran 49 tests in 0.361s / OK" + "H-01 frame ring
+  dev-gated, bounded and pipeline-compatible PASS" (6 s).
+  toolchain: "All host tools found." (make toolchain); disco
+  /dev/root 145G total, 91G livres (38% usado) — folga ampla p/ Gate 2.
+Baseline commit: 868669f (main)
+Candidate commit: 5ac3cd6 (PR #1)
+Environment: GitHub-hosted ubuntu-26.04 (x64)
+Configuration: pacotes tools/ci/ubuntu-packages.txt; checkout SHA pinado
+Test cases: o próprio workflow (2 jobs)
+Number of repetitions: 1 (primeira run)
+Baseline results: n/a
+Candidate results: 2/2 jobs success, zero MISSING no toolchain
+Measured difference: n/a (infra)
+Variance/uncertainty: nenhuma (gates determinísticos; apt pode variar
+  com o tempo — pins de pacotes ficam p/ endurecimento futuro)
+Correctness results: n/a
+Compatibility risks: nenhum (workflow novo; release.yml intocado)
+Decision: ACCEPTED (Gate 1 verde; Gate 2a job make-test adicionado ao
+  workflow no worktree, ainda não commitado — requer push autorizado)
+Rollback procedure: n/a (nada em main; branch/PR deletáveis)
+```
+
+```text
+Optimization ID: H-01e (review round PR #1: 16 threads → 12 correções)
+Subsystem: instrumentation (pipeline + C++ + docs; sem mudança de produto)
+1) Gate sem evidência (Codex P1 + Copilot high): overall() agora retorna
+   inconclusive quando nenhuma métrica crítica tem veredito utilizável;
+   pass exige evidência. 3 expectativas antigas atualizadas (pass-sem-
+   evidência era exatamente o comportamento rejeitado).
+2) Warmup por execução (Codex P1 + Copilot medium): drop_warmup() remove
+   as N primeiras janelas de CADA input de windows, frames, buckets e
+   todos os numeradores delta (antes: só a 1ª janela global, só em fps).
+3) Deltas entre fronteiras (Codex P2 + Copilot medium): deltas()
+   reinicia a cadeia a cada troca de _file/_run; intervalos
+   fabricados entre execuções, eliminados.
+4) Normalização por intervalo (Codex P2): MetricSpec.normalize_by —
+   totais delta dividem por seus intervals medidos (não windows.n).
+5) within_vsync_share (Codex P2): numerador v1+half (antes só v1
+   punia frames mais rápidos); chave renomeada p/ honestidade.
+6) Ring entre sessões (Copilot medium): statics do OnFrameDisplayed
+   vazavam amostras do título anterior (janela nova por sessão,
+   main.cpp:408/1025, verificada). Fix: declarações movidas p/ cima
+   do if/else + limpeza no 1º frame (membros resetam; statics não).
+   interval_hist tinha o mesmo defeito pré-existente — corrigido junto
+   (mesma causa raiz). Check §3c impõe a ordem.
+7) cache_blocked por deltas (Copilot medium): antes último cumulativo
+   vitalício; agora stats["guest"]["totals"] + intervals (F4).
+8) Tipos em collect (Copilot medium): required numérico exige número
+   finito (não-bool); api exige string não-vazia; violações → bad-type.
+9) Banda de triagem (Copilot medium): triage_band_or_exit rejeita
+   negativos/não-finitos com exit 2 (antes invertiam o gate).
+10) P99.9 (Copilot medium): distribution() ganha p99_9 (FR-003/H-01
+    exigiam); teste 1..100 → 99.901. Sem gate (ruído > p99).
+11) Docs (3 lows): frame_p95_ms na lista crítica (04); EDEN_VULKAN_FRAMES
+    no backlog (05); docstring do analyze (era "samples do not exist").
+Evidence: suite 61/61 (13 testes red-first, 13 vermelhos observados);
+  split test_frames.py preservou verde; check-frame-ring red(1)→green(0)
+  no C++; tetos LOC ok (analyze 241/compare 203 em atenção, sem +edições).
+Baseline commit: 5ac3cd6 (PR #1). Candidate: worktree, não commitado.
+Environment: host Fedora 44; console pendente.
+Correctness results: produção inalterada (C++ dev-only; pipeline host).
+Compatibility risks: renomeação v1_share→within_vsync_share (relatórios
+  locais apenas); overall([]) agora inconclusive (inalcançável em uso).
+Decision: REQUIRES_HARDWARE_VALIDATION (push + CI + compilação + console)
+Rollback procedure: revert dos hunks por arquivo.
 ```
 
 ## Baseline no console (protocolo executável, 02 §3)

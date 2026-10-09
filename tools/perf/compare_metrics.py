@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-from computed_metrics import COMPUTED, is_partial, number, windows_n
+from computed_metrics import COMPUTED, is_partial, number
 
 
 class Outcome(StrEnum):
@@ -23,7 +23,11 @@ class Outcome(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class MetricSpec:
-    """One compared metric: JSON path or computed key, direction, gate."""
+    """One compared metric: JSON path or computed key, direction, gate.
+
+    normalize_by names the divisor path (delta totals cover measured
+    intervals, not counted windows); None compares the raw value.
+    """
 
     key: str
     label: str
@@ -31,7 +35,7 @@ class MetricSpec:
     higher_better: bool
     critical: bool
     path: tuple[str, ...] | None
-    per_window: bool = False
+    normalize_by: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,30 +64,30 @@ SPECS: Final = (
                ("windows", "worst_ms", "mean")),
     MetricSpec("worst_max", "window worst frametime (max)", "ms", False, True,
                ("windows", "worst_ms", "max")),
-    MetricSpec("dispatch_ns", "GPU dispatch (per window)", "ns", False, False,
-               ("gpu", "totals", "dispatch_ns"), True),
-    MetricSpec("drain_ns", "GPU fence drain (per window)", "ns", False, False,
-               ("gpu", "totals", "drain_ns"), True),
-    MetricSpec("present_ns", "present wait (per window)", "ns", False, False,
-               ("gpu", "totals", "present_ns"), True),
-    MetricSpec("queue_full_ns", "queue-full wait (per window)", "ns", False, False,
-               ("gpu", "totals", "full_ns"), True),
-    MetricSpec("cpu_write_ns", "guest CPU write (per window)", "ns", False, False,
-               ("guest", "totals", "cpu_write_ns"), True),
-    MetricSpec("cpu_read_ns", "guest flush-area read (per window)", "ns", False, False,
-               ("guest", "totals", "cpu_read_ns"), True),
-    MetricSpec("cache_blocked", "cache-lock sleeps (per window)", "count", False, False,
-               ("cache_lock", "blocked"), True),
-    MetricSpec("fastmem_faults", "fastmem faults (per window)", "count", False, False,
-               ("fastmem", "totals", "faults"), True),
-    MetricSpec("fastmem_kernel_ns", "fastmem kernel (per window)", "ns", False, False,
-               ("fastmem", "totals", "kernel_ns"), True),
+    MetricSpec("dispatch_ns", "GPU dispatch (per interval)", "ns", False, False,
+               ("gpu", "totals", "dispatch_ns"), ("gpu", "intervals")),
+    MetricSpec("drain_ns", "GPU fence drain (per interval)", "ns", False, False,
+               ("gpu", "totals", "drain_ns"), ("gpu", "intervals")),
+    MetricSpec("present_ns", "present wait (per interval)", "ns", False, False,
+               ("gpu", "totals", "present_ns"), ("gpu", "intervals")),
+    MetricSpec("queue_full_ns", "queue-full wait (per interval)", "ns", False, False,
+               ("gpu", "totals", "full_ns"), ("gpu", "intervals")),
+    MetricSpec("cpu_write_ns", "guest CPU write (per interval)", "ns", False, False,
+               ("guest", "totals", "cpu_write_ns"), ("guest", "intervals")),
+    MetricSpec("cpu_read_ns", "guest flush-area read (per interval)", "ns", False, False,
+               ("guest", "totals", "cpu_read_ns"), ("guest", "intervals")),
+    MetricSpec("cache_blocked", "cache-lock sleeps (per interval)", "count", False, False,
+               ("cache_lock", "blocked"), ("guest", "intervals")),
+    MetricSpec("fastmem_faults", "fastmem faults (per interval)", "count", False, False,
+               ("fastmem", "totals", "faults"), ("fastmem", "intervals")),
+    MetricSpec("fastmem_kernel_ns", "fastmem kernel (per interval)", "ns", False, False,
+               ("fastmem", "totals", "kernel_ns"), ("fastmem", "intervals")),
     MetricSpec("largest_free", "min largest free direct block", "bytes", True, True,
                ("direct_memory", "min_largest_free")),
     MetricSpec("gpu_busy_ms", "GPU busy (mean, opt-in)", "ms", False, False,
                ("gpu_time", "busy_ms", "mean")),
-    MetricSpec("v1_share", "frames within 1 vsync (share)", "fraction", True, False,
-               None),
+    MetricSpec("within_vsync_share", "frames within 1 vsync (share)", "fraction",
+               True, False, None),
     MetricSpec("dispatch_per_draw", "dispatch per draw", "ns/draw", False, False,
                None),
     MetricSpec("jit_compilations", "JIT compilations (info)", "count", False, False,
@@ -114,7 +118,7 @@ FRAME_KEYS: Final = frozenset({"frame_p95_ms", "frame_p99_ms",
 
 
 def metric_value(stats: dict, spec: MetricSpec) -> float | None:
-    """Extract (and per-window normalize) one metric from a stats report."""
+    """Extract (and normalize) one metric from a stats report."""
     if spec.path is not None:
         value = number(stats, spec.path)
     else:
@@ -122,11 +126,11 @@ def metric_value(stats: dict, spec: MetricSpec) -> float | None:
         value = compute(stats) if compute is not None else None
     if value is None:
         return None
-    if spec.per_window:
-        windows = windows_n(stats)
-        if windows <= 0:
+    if spec.normalize_by is not None:
+        divisor = number(stats, spec.normalize_by)
+        if divisor is None or divisor <= 0:
             return None
-        return value / windows
+        return value / divisor
     return value
 
 
@@ -195,10 +199,14 @@ def compare_reports(base: dict, cand: dict, band_pct: float) -> list[MetricResul
 
 
 def overall(results: list[MetricResult]) -> str:
-    """Gate: proven regression wins; blocked frame metrics force inconclusive."""
+    """Gate: proven regression wins; empty or blocked evidence is inconclusive."""
     critical = {spec.key for spec in SPECS if spec.critical}
     if any(r.key in critical and r.outcome is Outcome.WORSE for r in results):
         return "regression"
     if any(r.key in FRAME_KEYS and r.blocked for r in results):
+        return "inconclusive"
+    measured = [r for r in results
+                if r.key in critical and r.outcome is not Outcome.NODATA]
+    if not measured:
         return "inconclusive"
     return "pass"

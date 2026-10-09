@@ -6,6 +6,7 @@ Unlike most check-*.py this needs no build cache: it inspects the source
 tree directly, so it runs on any host with plain python3. Usage:
     python3 -B tools/check-frame-ring.py [path/to/graphics.cpp]
 """
+import re
 import sys
 from pathlib import Path
 
@@ -29,6 +30,16 @@ reset_count = source.index("frame_ms_count = 0;", emit)
 reset_over = source.index("frame_ms_overflow = 0;", emit)
 end = source.index("#endif", emit)
 assert emit < reset_count < end and emit < reset_over < end
+
+# 3c. A fresh window is a fresh session (one GraphicsWindow per launcher
+# iteration): the first-frame branch must clear the previous title's
+# unflushed samples and buckets (H-01e).
+first = source.index("if (frame_sample_start < 0) {")
+els = source.index("} else {", first)
+for anchor in ("frame_ms_count = 0;", "frame_ms_overflow = 0;",
+               "interval_hist = {};"):
+    hits = [m.start() for m in re.finditer(re.escape(anchor), source)]
+    assert any(first < h < els for h in hits), anchor
 
 
 def dev_gated(anchor):

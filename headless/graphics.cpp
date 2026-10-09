@@ -627,23 +627,35 @@ void GraphicsWindow::OnFrameDisplayed() {
         vulkan_hud = MakeHudSnapshot(vulkan_hud_clock, vulkan_hud_speed);
 #endif
         ++frame_total;
+#ifdef EDEN_DEV_PROFILE
+        // Present intervals by vsync multiple: a 60 FPS title that misses by a little
+        // shows up in the 2-vsync bucket, a slow one across all of them. "half" counts the
+        // frames that came within one refresh of a 120 Hz output.
+        // H-01/FR-003: every present interval of the window in ms, reported as CSV
+        // with EDEN_VULKAN_FRAME for true frame-level percentiles. Static storage,
+        // one float store per frame; dev profile only (zero production overhead).
+        // 1024 covers a 5 s window past 200 FPS; beyond that `overflow` counts
+        // the dropped tail instead of wrapping.
+        static std::array<unsigned, 5> interval_hist{};
+        static std::array<float, 1024> frame_ms{};
+        static unsigned frame_ms_count = 0, frame_ms_overflow = 0;
+#endif
         if (frame_sample_start < 0) {
             frame_sample_start = frame_sample_last = now;
+#ifdef EDEN_DEV_PROFILE
+            // H-01e: a fresh window is a fresh session (main.cpp builds one
+            // GraphicsWindow per launcher iteration, and this branch runs only
+            // on the window's first frame): drop the previous title's
+            // unflushed samples and buckets instead of prepending them to
+            // this session's first window.
+            interval_hist = {};
+            frame_ms_count = 0;
+            frame_ms_overflow = 0;
+#endif
         } else {
             ++frame_sample_count;
             frame_sample_worst = std::max(frame_sample_worst, now - frame_sample_last);
 #ifdef EDEN_DEV_PROFILE
-            // Present intervals by vsync multiple: a 60 FPS title that misses by a little
-            // shows up in the 2-vsync bucket, a slow one across all of them. "half" counts the
-            // frames that came within one refresh of a 120 Hz output.
-            static std::array<unsigned, 5> interval_hist{};
-            // H-01/FR-003: every present interval of the window in ms, reported as CSV
-            // with EDEN_VULKAN_FRAME for true frame-level percentiles. Static storage,
-            // one float store per frame; dev profile only (zero production overhead).
-            // 1024 covers a 5 s window past 200 FPS; beyond that `overflow` counts
-            // the dropped tail instead of wrapping.
-            static std::array<float, 1024> frame_ms{};
-            static unsigned frame_ms_count = 0, frame_ms_overflow = 0;
             const double interval_ms = (now - frame_sample_last) * 1000.0;
             ++interval_hist[interval_ms < 12.5 ? 4 : interval_ms < 20.0 ? 0 : interval_ms < 36.0 ? 1 :
                             interval_ms < 52.0 ? 2 : 3];

@@ -41,17 +41,19 @@ def dispatch_ns_per_draw(stats: dict) -> float | None:
     return dispatch / draws
 
 
-def v1_share(stats: dict) -> float | None:
-    """Share of bucketed frames that landed within one vsync."""
+def within_vsync_share(stats: dict) -> float | None:
+    """Share of bucketed frames within one 60 Hz vsync (v1 + half)."""
     buckets = stats.get("intervals", {}).get("buckets", {})
     if not isinstance(buckets, dict):
         return None
     counts = [v for v in buckets.values() if isinstance(v, (int, float))]
     total = sum(counts)
     v1 = buckets.get("v1")
-    if total <= 0 or not isinstance(v1, (int, float)):
+    half = buckets.get("half")
+    if total <= 0 or not isinstance(v1, (int, float)) \
+            or not isinstance(half, (int, float)):
         return None
-    return float(v1) / float(total)
+    return (float(v1) + float(half)) / float(total)
 
 
 def jit_compilations(stats: dict) -> float | None:
@@ -125,7 +127,7 @@ def frame_over2x_share(stats: dict) -> float | None:
 
 
 COMPUTED: Final[dict[str, Callable[[dict], float | None]]] = {
-    "v1_share": v1_share,
+    "within_vsync_share": within_vsync_share,
     "dispatch_per_draw": dispatch_ns_per_draw,
     "jit_compilations": jit_compilations,
     "jit_compile_ms": jit_compile_ms,

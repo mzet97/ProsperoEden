@@ -107,6 +107,47 @@ class TestCollectParse(unittest.TestCase):
         self.assertEqual(collect.parse_value("api", "submit"), "submit")
         self.assertEqual(collect.parse_value("window", "zz"), "zz")
 
+    def test_non_numeric_required_field_is_incomplete(self) -> None:
+        # Given a frame line whose fps is not a number (H-01e),
+        line = ("EDEN_VULKAN_FRAME frames=150 seconds=5.0 fps=oops "
+                "worst_ms=40.0 total=150 not_shown=0 clock_hz=60.0")
+        # When parsed,
+        record = collect.parse_line(line)
+        # Then presence alone does not pass: the type violation excludes it.
+        assert record is not None
+        self.assertFalse(record["complete"])
+        self.assertIn("fps:bad-type", record["_missing"])
+
+    def test_non_finite_required_field_is_incomplete(self) -> None:
+        # Given required fields with inf/nan payloads (H-01e),
+        inf = collect.parse_line(
+            "EDEN_VULKAN_FRAME frames=150 seconds=5.0 fps=inf worst_ms=40.0 total=150")
+        nan = collect.parse_line("EDEN_GPU_TIME wall_ms=nan busy_ms=1.0 submissions=2")
+        # When parsed,
+        # Then neither counts as complete.
+        assert inf is not None and nan is not None
+        self.assertFalse(inf["complete"])
+        self.assertFalse(nan["complete"])
+
+    def test_int_tolerated_for_float_field(self) -> None:
+        # Given whole-number payloads on float fields (H-01e),
+        line = ("EDEN_VULKAN_FRAME frames=150 seconds=5 fps=30 "
+                "worst_ms=40 total=150")
+        # When parsed,
+        record = collect.parse_line(line)
+        # Then JSON numbers of either shape are accepted.
+        assert record is not None
+        self.assertTrue(record["complete"])
+        self.assertEqual(record["fps"], 30)
+
+    def test_empty_api_name_is_incomplete(self) -> None:
+        # Given a Vulkan-cost line with an empty api tag (H-01e),
+        record = collect.parse_line("EDEN_VULKAN_COST api= calls=1 ns=2")
+        # When parsed,
+        # Then the string-typed required key rejects the empty value.
+        assert record is not None
+        self.assertFalse(record["complete"])
+
     def test_malformed_idle_triple_stays_string(self) -> None:
         # Given an idle token that is not a triple,
         # When converted,

@@ -30,7 +30,9 @@ flowchart LR
 - Cumulativos entram só como deltas; séries sobrepostas nunca somam
   (regra normativa de `headless/performance.h:210`).
 - Gate: regressão em métrica crítica (`fps_mean`, `worst_mean`,
-  `worst_max`, `largest_free`) → saída 1 (`compare_metrics.py`).
+  `worst_max`, `largest_free`, `frame_p95_ms`) → saída 1; evidência
+  crítica ausente ou frames parciais → `inconclusive`, saída 3
+  (`compare_metrics.py`).
 
 ## 3. Matriz perfil × parâmetro (PERF-FR-005)
 

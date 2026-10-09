@@ -96,18 +96,31 @@ class TestCompareVerdicts(unittest.TestCase):
         self.assertIs(result.outcome, compare_metrics.Outcome.SAME)
         self.assertIn("overlap", result.detail)
 
-    def test_per_window_normalizes_run_length(self) -> None:
-        # Given equal per-window dispatch over different run lengths,
-        base = stats(2, 30.0, 0.1, 40.0, 0.1,
-                     gpu={"totals": {"dispatch_ns": 1000}})
-        cand = stats(3, 30.0, 0.1, 40.0, 0.1,
-                     gpu={"totals": {"dispatch_ns": 1500}})
+    def test_per_interval_normalizes_run_length(self) -> None:
+        # Given equal per-interval dispatch where intervals trail windows (H-01e:
+        # delta totals cover measured intervals, not counted windows),
+        base = stats(3, 30.0, 0.1, 40.0, 0.1,
+                     gpu={"intervals": 2, "totals": {"dispatch_ns": 1000}})
+        cand = stats(4, 30.0, 0.1, 40.0, 0.1,
+                     gpu={"intervals": 4, "totals": {"dispatch_ns": 2000}})
         # When judged,
         result = compare_metrics.judge(spec_for("dispatch_ns"), base, cand, 2.0)
         # Then raw totals never compare; the normalized move is zero.
         self.assertIs(result.outcome, compare_metrics.Outcome.SAME)
         self.assertAlmostEqual(result.base or -1.0, 500.0)
         self.assertAlmostEqual(result.cand or -1.0, 500.0)
+
+    def test_within_vsync_share_counts_fast_bucket(self) -> None:
+        # Given buckets split between the fast and one-vsync ranges (H-01e),
+        buckets: dict[str, object] = {"v1": 80, "half": 10, "v2": 10,
+                                      "v3": 0, "v4plus": 0}
+        base = stats(6, 30.0, 0.1, 40.0, 0.1, intervals={"buckets": buckets})
+        cand = stats(6, 30.0, 0.1, 40.0, 0.1, intervals={"buckets": dict(buckets)})
+        # When judged,
+        result = compare_metrics.judge(spec_for("within_vsync_share"), base, cand, 2.0)
+        # Then both favorable buckets feed the higher-is-better share.
+        self.assertIs(result.outcome, compare_metrics.Outcome.SAME)
+        self.assertAlmostEqual(result.base or 0.0, 0.9)
 
     def test_frame_p95_regression_is_critical(self) -> None:
         # Given frame p95 rising +10% (lower is better),
@@ -204,8 +217,20 @@ class TestCompareVerdicts(unittest.TestCase):
         # When gated,
         # Then only a critical worse flips the gate.
         self.assertEqual(compare_metrics.overall([worse_critical]), "regression")
-        self.assertEqual(compare_metrics.overall([worse_trivia]), "pass")
-        self.assertEqual(compare_metrics.overall([]), "pass")
+        self.assertEqual(compare_metrics.overall([worse_trivia]), "inconclusive")
+        self.assertEqual(compare_metrics.overall([]), "inconclusive")
+
+    def test_overall_needs_critical_evidence(self) -> None:
+        # Given verdicts with no usable critical measurement (H-01e),
+        nodata = compare_metrics.MetricResult("fps_mean", "fps", "fps", None,
+                                              None, None, compare_metrics.Outcome.NODATA,
+                                              "missing data")
+        same_trivia = compare_metrics.MetricResult("fps_p50", "p50", "fps", 30.0,
+                                                   30.0, 0.0, compare_metrics.Outcome.SAME, "")
+        # When gated,
+        # Then the gate refuses to pass on empty evidence.
+        self.assertEqual(compare_metrics.overall([nodata]), "inconclusive")
+        self.assertEqual(compare_metrics.overall([same_trivia]), "inconclusive")
 
     def test_overall_inconclusive_when_frames_blocked(self) -> None:
         # Given a frame verdict blocked by overflow (H-01d),
@@ -225,6 +250,18 @@ class TestCompareVerdicts(unittest.TestCase):
         self.assertEqual(compare_metrics.overall([blocked]), "inconclusive")
         self.assertEqual(compare_metrics.overall([worse_critical, blocked]), "regression")
         self.assertEqual(compare_metrics.overall([blocked_trivia]), "pass")
+
+    def test_triage_band_validation(self) -> None:
+        # Given --triage-band payloads (H-01e),
+        # When parsed,
+        # Then finite non-negative values pass and the rest exit 2.
+        self.assertEqual(compare.triage_band_or_exit("2.5"), 2.5)
+        self.assertEqual(compare.triage_band_or_exit("0"), 0.0)
+        for raw in ("-1", "nan", "inf", "-inf", "xx"):
+            with self.subTest(raw=raw):
+                with self.assertRaises(SystemExit) as raised:
+                    compare.triage_band_or_exit(raw)
+                self.assertEqual(raised.exception.code, 2)
 
     def test_report_states_frame_provenance_and_cadence(self) -> None:
         # Given two reports with frame samples (H-01d),

@@ -21,8 +21,8 @@ firmware proprietários (regra 3.4 do master prompt).
 
 | ID | O quê | Onde | Gate |
 |----|-------|------|------|
-| T-01 | Suite `tools/perf` (49 testes: parse, deltas, percentis window + frame-level, vereditos, gate p95, bloqueio partial→inconclusive, shares diagnósticas, pipeline E2E) | `tools/perf/test_*.py` | `python3 tools/perf/test_perf.py` verde |
-| T-05 | Check estrutural do anel H-01 (dev-gating, limites, reset/janela, budget × pipeline real) | `tools/check-frame-ring.py` | exit 0 no worktree; funciona sem build cache |
+| T-01 | Suite `tools/perf` (61 testes: + warmup/run, deltas c/ fronteira, per-interval, gate c/ evidência, tipos, banda, p99.9, vsync+half) | `tools/perf/test_*.py` | `python3 tools/perf/test_perf.py` verde |
+| T-05 | Check estrutural do anel H-01 (dev-gating, limites, reset/janela, reset/sessão, budget × pipeline real) | `tools/check-frame-ring.py` | exit 0 no worktree; funciona sem build cache |
 | T-02 | Percentis por frame vs série sintética (quando H-01 implementar) | novo `check-frame-percentiles.py` ou extensão de `test_perf.py` | paridade com cálculo manual |
 | T-03 | A/B de switches dev sem console (parse + defaults) | estender `check-performance-settings.py` | defaults inalterados por experimento |
 | T-04 | Regressão de JIT por experimento (proteção, allocator, monitor) | reutilizar T-01-lista JIT acima | todos verdes antes do A/B |

@@ -1,10 +1,12 @@
 name: ProsperoEden Toolchain
 
-# ENV-01: qualify the build environment without touching the developer's
-# Fedora/Bazzite host (master prompt section 13). First gate only: the
-# toolchain installs and `make toolchain` passes on ubuntu-26.04
-# (GA 2026-09-17), plus the dependency-free static checks. `make test`
-# and the H-01 development build are later gates on this same runner.
+# ENV-01 + Gate 2: qualify the build environment without touching the
+# developer's Fedora/Bazzite host (master prompt section 13).
+# Gate 1 (green): the toolchain installs and `make toolchain` passes on
+# ubuntu-26.04 (GA 2026-09-17), plus the dependency-free static checks.
+# Gate 2a: `make test` — dependency fetch plus the host (Linux) build of
+# the emulator and its test suites. Gate 2b (H-01 development build,
+# PS5 cross-compile) follows once Gate 2a is green.
 #
 # Triggers follow the release workflow's philosophy (validate pull
 # requests; main builds nothing by itself) plus manual runs.
@@ -51,3 +53,24 @@ jobs:
 
       - name: H-01 frame-ring structural check
         run: python3 -B tools/check-frame-ring.py
+
+  make-test:
+    needs: [toolchain, perf-static]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install the build tools (tools/ci/ubuntu-packages.txt)
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2046 # one package name per word
+          sudo apt-get install --yes --no-install-recommends $(grep -v '^#' tools/ci/ubuntu-packages.txt)
+
+      # Pinned inputs only (tools/deps.json); nothing already present is
+      # modified. First run downloads Eden/FFmpeg/SDKs (network + gigabytes).
+      - name: Fetch dependencies
+        run: make deps
+
+      - name: Host build and test suites
+        run: make test

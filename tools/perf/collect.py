@@ -10,11 +10,13 @@ Usage:
 Every EDEN_* line becomes one JSON object per line: marker fields plus
 "_marker", "_line", "_file" and "_run". Lines that fail to parse are
 reported on stderr with their line number and skipped -- never
-interpolated. Records missing required keys are kept with
+interpolated. Records missing required keys -- or carrying them with
+the wrong type (non-finite numbers, empty names) -- are kept with
 "complete": false so the analyzer can exclude them explicitly.
 Stdlib only.
 """
 import json
+import math
 import sys
 from typing import Final
 
@@ -27,6 +29,10 @@ Record = dict[str, RecordValue]
 HEX_KEYS: Final = frozenset({
     "window", "pc", "location", "entry", "address", "mask",
 })
+
+# Required keys that carry names instead of numbers (every other required
+# key must arrive as a finite JSON number; see parse_line).
+STR_REQUIRED: Final = frozenset({("EDEN_VULKAN_COST", "api")})
 
 # Minimal required keys per marker; a record missing any is incomplete.
 REQUIRED: Final = {
@@ -116,6 +122,19 @@ def parse_line(line: str) -> Record | None:
         missing = []
     if marker == "EDEN_VULKAN_FRAMES" and isinstance(record.get("ms"), str):
         missing.append("ms-parse")
+    for key in required:
+        if key not in record:
+            continue
+        if marker == "EDEN_VULKAN_FRAMES" and key == "ms":
+            continue  # the ms-parse verdict above owns this key
+        value = record[key]
+        if (marker, key) in STR_REQUIRED:
+            ok = isinstance(value, str) and bool(value)
+        else:
+            ok = (isinstance(value, (int, float)) and not isinstance(value, bool)
+                  and math.isfinite(value))
+        if not ok:
+            missing.append(f"{key}:bad-type")
     record["complete"] = not missing
     if missing:
         record["_missing"] = missing

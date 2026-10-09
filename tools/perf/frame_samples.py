@@ -60,6 +60,7 @@ def distribution(values: list[int | float]) -> Distribution:
         "p50": percentile(ordered, 50),
         "p95": percentile(ordered, 95),
         "p99": percentile(ordered, 99),
+        "p99_9": percentile(ordered, 99.9),
     }
 
 

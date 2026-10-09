@@ -17,10 +17,14 @@
 - [x] Workflow `.github/workflows/toolchain.yml`: job toolchain
   (pacotes canônicos + `make toolchain` + `df -h`) + job perf-static
   (suite + check H-01, sem dependências). YAML validado localmente.
-- [ ] Gate 1: primeira run verde (requer push/PR — nunca dado sem pedido).
-  Monitorar: `gh run list --workflow toolchain.yml --limit 5`;
-  `gh run view <RUN_ID> --log-failed`. Corrigir ambiente sem tocar produção.
-- [ ] Gate 2: `make test` no runner qualificado; depois build dev com H-01.
+- [x] Gate 1: primeira run verde — run 37858755115 success
+  (toolchain "All host tools found", perf-static 49 testes + check H-01;
+  91G livres). Registro ENV-01-RUN em 09.
+- [ ] Gate 2a: job `make-test` (needs toolchain+perf-static, timeout 240)
+  adicionado ao workflow no worktree — validar YAML localmente (ok) e
+  fazer push autorizado p/ rodar `make deps` + `make test` no runner.
+- [ ] Gate 2b: build dev PS5 com H-01 (só após 2a verde; é o teste real
+  de compilação do anel — release não define EDEN_DEV_PROFILE).
 - [ ] Gate 3: B-000 com calibração A/A prévia (mesmo binário × ele mesmo;
   se |Δ| A/A excede ±2% com frequência, a banda não é critério confiável —
   alargar banda ou ampliar runs antes de qualquer A/B).

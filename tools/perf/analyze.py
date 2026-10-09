@@ -9,10 +9,12 @@ Usage:
 Rules (docs/sdd/performance/02-baseline.md):
 - Cumulative markers (EDEN_DEV_GPU/GUEST, EDEN_VULKAN_COST,
   EDEN_PERF_PROGRESS, EDEN_PERF_JIT) enter only as deltas between
-  consecutive complete reports. Overlapping series are never summed.
-- Percentiles come only from real samples. Per-frame samples do not
-  exist yet (PERF-FR-003); until then, fps/worst distributions are
-  reported across 5 s windows and labelled "window-level".
+  consecutive complete reports of the same input execution; run/file
+  boundaries reset the chain. Overlapping series are never summed.
+- Percentiles come only from real samples: EDEN_VULKAN_FRAMES yields
+  frame-level p50/p95/p99/p99.9, while fps/worst stay window-level.
+- --warmup-windows N drops the first N windows of EACH input execution
+  from windows, frame samples, buckets and every delta numerator.
 - Incomplete records (complete=false) are counted and excluded.
 Stdlib only.
 """
@@ -55,13 +57,35 @@ GUEST_DELTA_FIELDS: Final = (
 JIT_DELTA_FIELDS: Final = ("compilations", "compile_ns", "evacuations")
 
 
+def drop_warmup(records: list[Record], windows: int) -> list[Record]:
+    """Drop the first N records of each input execution, order-preserving."""
+    if windows <= 0:
+        return list(records)
+    skipped: dict[tuple[str | None, str | None], int] = {}
+    kept: list[Record] = []
+    for record in records:
+        key = (record.get("_file"), record.get("_run"))
+        seen = skipped.get(key, 0)
+        if seen < windows:
+            skipped[key] = seen + 1
+        else:
+            kept.append(record)
+    return kept
+
+
 def deltas(reports: list[Record], fields: tuple[str, ...]) -> DeltaResult:
-    """Per-interval deltas of cumulative fields; resets emit no delta."""
+    """Per-interval deltas of cumulative fields.
+
+    Counter resets emit no delta, and the chain restarts at every input
+    file/run boundary so merged executions never fabricate intervals.
+    """
     totals: DeltaTotals = {name: 0 for name in fields}
     intervals = 0
     previous: Record | None = None
+    prev_key: tuple[str | None, str | None] | None = None
     for report in reports:
-        if previous is not None:
+        key = (report.get("_file"), report.get("_run"))
+        if previous is not None and key == prev_key:
             step: DeltaTotals = {}
             for name in fields:
                 now, before = report.get(name), previous.get(name)
@@ -74,7 +98,7 @@ def deltas(reports: list[Record], fields: tuple[str, ...]) -> DeltaResult:
                 for name, value in step.items():
                     totals[name] += value
                 intervals += 1
-        previous = report
+        previous, prev_key = report, key
     return {"intervals": intervals, "totals": totals}
 
 
@@ -98,24 +122,26 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
     for marker in FRAME_MARKERS:
         windows.extend(by_marker.get(marker, []))
     windows.sort(key=lambda r: (r.get("_file", ""), r.get("_line", 0)))
-    windows = windows[warmup_windows:]
+    kept_windows = drop_warmup(windows, warmup_windows)
     stats["windows"] = {
-        "n": len(windows),
-        "warmup_excluded": warmup_windows,
-        "markers": sorted({w["_marker"] for w in windows}),
-        "fps": distribution([w["fps"] for w in windows
+        "n": len(kept_windows),
+        "warmup_excluded": len(windows) - len(kept_windows),
+        "markers": sorted({w["_marker"] for w in kept_windows}),
+        "fps": distribution([w["fps"] for w in kept_windows
                              if isinstance(w.get("fps"), (int, float))]),
-        "worst_ms": distribution([w["worst_ms"] for w in windows
+        "worst_ms": distribution([w["worst_ms"] for w in kept_windows
                                   if isinstance(w.get("worst_ms"), (int, float))]),
         "level": "window (5 s each); frame-level percentiles need PERF-FR-003",
     }
-    total_frames = sum(w.get("frames", 0) for w in windows
+    total_frames = sum(w.get("frames", 0) for w in kept_windows
                        if isinstance(w.get("frames"), int))
 
     # Vsync-bucket histogram (dev Vulkan only).
     buckets = {"v1": 0, "v2": 0, "v3": 0, "v4plus": 0, "half": 0}
     n_bucket_reports = 0
-    for report in by_marker.get("EDEN_VULKAN_INTERVALS", []):
+    bucket_reports = drop_warmup(by_marker.get("EDEN_VULKAN_INTERVALS", []),
+                                 warmup_windows)
+    for report in bucket_reports:
         if all(isinstance(report.get(k), int) for k in buckets):
             for key in buckets:
                 buckets[key] += report[key]
@@ -123,7 +149,8 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
     stats["intervals"] = {"reports": n_bucket_reports, "buckets": buckets}
 
     # Per-frame intervals (H-01): true frame-level percentiles when present.
-    frames = summarize_frames(by_marker.get("EDEN_VULKAN_FRAMES", []))
+    frames = summarize_frames(drop_warmup(by_marker.get("EDEN_VULKAN_FRAMES", []),
+                                          warmup_windows))
     stats["frame_samples"] = frames
     if frames["samples"]:
         stats["windows"]["level"] = (
@@ -131,17 +158,18 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
             "window fps/worst kept for cross-log comparability")
 
     # GPU / guest cumulative deltas (never summed across overlapping series).
-    stats["gpu"] = deltas(by_marker.get("EDEN_DEV_GPU", []), GPU_DELTA_FIELDS)
-    stats["guest"] = deltas(by_marker.get("EDEN_DEV_GUEST", []), GUEST_DELTA_FIELDS)
+    stats["gpu"] = deltas(drop_warmup(by_marker.get("EDEN_DEV_GPU", []), warmup_windows),
+                          GPU_DELTA_FIELDS)
+    stats["guest"] = deltas(drop_warmup(by_marker.get("EDEN_DEV_GUEST", []),
+                                        warmup_windows),
+                            GUEST_DELTA_FIELDS)
 
-    # Cache-lock contention totals (from the last complete guest report).
-    guest = by_marker.get("EDEN_DEV_GUEST", [])
-    if guest:
-        last = guest[-1]
-        stats["cache_lock"] = {
-            "contended": last.get("cache_lock_contended"),
-            "blocked": last.get("cache_lock_blocked"),
-        }
+    # Cache-lock contention (interval deltas, like every cumulative series).
+    guest_totals = stats["guest"]["totals"]
+    stats["cache_lock"] = {
+        "contended": guest_totals.get("cache_lock_contended"),
+        "blocked": guest_totals.get("cache_lock_blocked"),
+    }
 
     # Vulkan API wall times (opt-in; overlapping calls -- no totals across apis).
     per_api = {}
@@ -150,7 +178,7 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
     vulkan = {}
     for api, reports in sorted(per_api.items()):
         reports.sort(key=lambda r: (r.get("_file", ""), r.get("_line", 0)))
-        vulkan[api] = deltas(reports, ("calls", "ns"))
+        vulkan[api] = deltas(drop_warmup(reports, warmup_windows), ("calls", "ns"))
     stats["vulkan_cost"] = vulkan
 
     # JIT compilations per core (deltas across progress reports).
@@ -161,21 +189,21 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
             per_core.setdefault(report.get("core"), []).append(report)
         for core, reports in per_core.items():
             reports.sort(key=lambda r: (r.get("_file", ""), r.get("_line", 0)))
+            kept = drop_warmup(reports, warmup_windows)
             fields = JIT_DELTA_FIELDS
             if marker == "EDEN_PERF_PROGRESS" and any(
-                    "translate_ns" in r for r in reports):
+                    "translate_ns" in r for r in kept):
                 fields = fields + ("translate_ns", "optimize_ns",
                                    "emit_ns", "ranges_ns")
-            jit.setdefault(str(core), {})[marker] = deltas(reports, fields)
+            jit.setdefault(str(core), {})[marker] = deltas(kept, fields)
     stats["jit"] = jit
 
     # GPU execution time of scheduler submissions (opt-in EDEN_GPU_TIME).
-    gpu_time = [r for r in by_marker.get("EDEN_GPU_TIME", [])
-                if "failed" not in r]
+    gpu_time_reports = drop_warmup(by_marker.get("EDEN_GPU_TIME", []), warmup_windows)
+    gpu_time = [r for r in gpu_time_reports if "failed" not in r]
     stats["gpu_time"] = {
         "reports": len(gpu_time),
-        "failed": sum(1 for r in by_marker.get("EDEN_GPU_TIME", [])
-                      if "failed" in r),
+        "failed": sum(1 for r in gpu_time_reports if "failed" in r),
         "busy_ms": distribution([r["busy_ms"] for r in gpu_time
                                  if isinstance(r.get("busy_ms"), (int, float))]),
         "submissions": sum(r.get("submissions", 0) for r in gpu_time
@@ -183,19 +211,20 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
     }
 
     # Fastmem cumulative deltas.
-    stats["fastmem"] = deltas(by_marker.get("EDEN_FASTMEM", []),
+    stats["fastmem"] = deltas(drop_warmup(by_marker.get("EDEN_FASTMEM", []),
+                                          warmup_windows),
                               ("direct_reads", "direct_writes", "faults",
                                "maps", "unmaps", "protects",
                                "kernel_calls", "kernel_ns", "failures"))
 
     # Direct-memory headroom: worst (min) largest free block observed.
-    direct = [r for r in by_marker.get("EDEN_PERF_DIRECT", [])
+    direct_reports = drop_warmup(by_marker.get("EDEN_PERF_DIRECT", []), warmup_windows)
+    direct = [r for r in direct_reports
               if isinstance(r.get("largest_free"), (int, float))]
     stats["direct_memory"] = {
         "reports": len(direct),
         "min_largest_free": min((r["largest_free"] for r in direct), default=None),
-        "short_reports": sum(1 for r in by_marker.get("EDEN_PERF_DIRECT", [])
-                             if r.get("short") == 1),
+        "short_reports": sum(1 for r in direct_reports if r.get("short") == 1),
     }
 
     # Loading / visibility milestones.
@@ -221,7 +250,7 @@ def analyze(records: list[Record], warmup_windows: int = 0) -> StatsReport:
 
     # HLE commands >= 1 ms (last cumulative report per service/cmd).
     hle = {}
-    for report in by_marker.get("EDEN_DEV_HLE", []):
+    for report in drop_warmup(by_marker.get("EDEN_DEV_HLE", []), warmup_windows):
         hle[(report.get("service"), report.get("cmd"))] = {
             "calls": report.get("calls"), "ns": report.get("ns")}
     stats["hle_commands_over_1ms"] = len(hle)
