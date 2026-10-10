@@ -834,6 +834,9 @@ pe::ui::GameSettings EdenServices::game_settings(std::uint64_t title_id) {
     result.filter = saved.upscaling_filter;
     result.refresh = saved.refresh;
     result.hud = saved.hud;
+    result.frame_gen = saved.frame_gen;
+    result.frame_gen_target = saved.frame_gen_target;
+    result.frame_gen_multiplier = saved.frame_gen_multiplier;
     result.volume = saved.volume;
     result.mute = saved.mute;
     result.vibration = saved.vibration;
@@ -852,6 +855,9 @@ bool EdenServices::set_game_settings(std::uint64_t title_id, const pe::ui::GameS
     value.upscaling_filter = settings.filter;
     value.refresh = settings.refresh;
     value.hud = settings.hud;
+    value.frame_gen = settings.frame_gen;
+    value.frame_gen_target = settings.frame_gen_target;
+    value.frame_gen_multiplier = settings.frame_gen_multiplier;
     value.volume = settings.volume;
     value.mute = settings.mute;
     value.vibration = settings.vibration;
@@ -872,11 +878,15 @@ pe::ui::Preferences EdenServices::preferences() {
     result.volume = saved.volume;
     result.mute = saved.mute;
     result.detailed_logging = saved.detailed_logging;
+    result.immediate_logs = saved.immediate_logs;
     result.renderer = saved.backend == Eden::GraphicsBackend::OpenGL ? 0 : 1;
     result.resolution = saved.resolution;
     result.filter = saved.upscaling_filter;
     result.refresh = saved.refresh;
     result.output = saved.output;
+    result.frame_gen = saved.frame_gen;
+    result.frame_gen_target = saved.frame_gen_target;
+    result.frame_gen_multiplier = saved.frame_gen_multiplier;
     result.vibration = saved.vibration;
     result.language = saved.language;
     result.menu_volume = saved.menu_volume;
@@ -902,11 +912,15 @@ bool EdenServices::set_preferences(const pe::ui::Preferences& preferences) {
     value.volume = preferences.volume;
     value.mute = preferences.mute;
     value.detailed_logging = preferences.detailed_logging;
+    value.immediate_logs = preferences.immediate_logs;
     value.backend = preferences.renderer == 0 ? Eden::GraphicsBackend::OpenGL : Eden::GraphicsBackend::Vulkan;
     value.resolution = preferences.resolution;
     value.upscaling_filter = preferences.filter;
     value.refresh = preferences.refresh;
     value.output = preferences.output;
+    value.frame_gen = preferences.frame_gen;
+    value.frame_gen_target = preferences.frame_gen_target;
+    value.frame_gen_multiplier = preferences.frame_gen_multiplier;
     value.vibration = preferences.vibration;
     value.language = preferences.language;
     value.menu_volume = preferences.menu_volume;
@@ -935,6 +949,15 @@ const std::vector<std::string>& EdenServices::resolution_labels() {
 const std::vector<std::string>& EdenServices::resolution_keys() {
     static const std::vector<std::string> labels = Labels(Eden::kResolutionKeys);
     return labels;
+}
+
+// The library is the user's own copy from Lossless Scaling: <user folder>/lossless/Lossless.dll.
+int EdenServices::frame_gen_state() {
+#ifdef EDEN_PS5_FRAMEGEN
+    return Eden::FileExists(Eden::UserDir() + "/lossless/Lossless.dll") ? 2 : 1;
+#else
+    return 0;
+#endif
 }
 
 const std::vector<std::string>& EdenServices::filter_labels() {

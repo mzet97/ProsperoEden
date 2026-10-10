@@ -144,6 +144,10 @@ msgid "Australia"
 msgstr "Αυστραλία"
 
 #: pe/ui/game_options.cpp
+msgid "Auto"
+msgstr "Αυτόματο"
+
+#: pe/ui/game_options.cpp
 msgid "Automatic"
 msgstr "Αυτόματα"
 
@@ -530,6 +534,10 @@ msgstr "Τα αποθηκευμένα δεδομένα κάθε προφίλ σ�
 msgid "Eden emulator for PlayStation 5"
 msgstr "Εξομοιωτής Eden για PlayStation 5"
 
+#: pe/ui/settings.cpp
+msgid "Eden's debug messages in the logs of a game."
+msgstr "Μηνύματα εντοπισμού σφαλμάτων του Eden στην καταγραφή ενός παιχνιδιού."
+
 #. Label of the shortcut that ends the running game.
 #: pe/ui/settings.cpp
 msgid "END GAME"
@@ -650,6 +658,22 @@ msgstr "Ένδειξη FPS"
 #: pe/ui/settings.cpp
 msgid "FPS OVERLAY"
 msgstr "ΕΝΔΕΙΞΗ FPS"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen multiplier"
+msgstr "Πολλαπλασιαστής παραγωγής καρέ"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen target"
+msgstr "Στόχος παραγωγής καρέ"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation"
+msgstr "Δημιουργία καρέ"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."
+msgstr "Η δημιουργία καρέ χρειάζεται το Lossless.dll από το Lossless Scaling στον φάκελο lossless."
 
 #: settings_store.h
 msgid "French"
@@ -821,6 +845,10 @@ msgstr "Κρατήστε μαζί τους φακέλους keys, firmware κα�
 #: pe/ui/save_sync.cpp
 msgid "Keep this console's"
 msgstr "Κράτα της κονσόλας"
+
+#: pe/ui/settings.cpp
+msgid "Keeps the last line before a crash, but games stutter. From the next start."
+msgstr "Κρατά την τελευταία γραμμή πριν από ένα σφάλμα, αλλά τα παιχνίδια κολλάνε. Από την επόμενη εκκίνηση."
 
 #: pe/ui/settings.cpp
 msgid "Keeps what a game reads back from the GPU exact. Off is faster, and some effects break."
@@ -1836,7 +1864,7 @@ msgstr "Νέα προσπάθεια."
 msgid "Turn on or off"
 msgstr "Εναλλαγή"
 
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "Unavailable"
 msgstr "Μη διαθέσιμο"
 
@@ -1995,6 +2023,10 @@ msgstr "Με τα αποθηκευμένα δεδομένα της κονσόλ�
 msgid "with {0}"
 msgstr "με {0}"
 
+#: pe/ui/settings.cpp
+msgid "Write logs at once"
+msgstr "Άμεση εγγραφή καταγραφής"
+
 #: pe/ui/save_sync.cpp
 msgid "You are asked again next time."
 msgstr "Θα ερωτηθείς ξανά την επόμενη φορά."
@@ -2056,7 +2088,7 @@ msgid "{0} games installed"
 msgstr "Εγκατεστημένα παιχνίδια: {0}"
 
 #. {0} is 60 or 120 (hertz).
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "{0} Hz"
 msgstr "{0} Hz"
 

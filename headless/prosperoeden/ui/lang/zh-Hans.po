@@ -144,6 +144,10 @@ msgid "Australia"
 msgstr "澳大利亚"
 
 #: pe/ui/game_options.cpp
+msgid "Auto"
+msgstr "自动"
+
+#: pe/ui/game_options.cpp
 msgid "Automatic"
 msgstr "自动"
 
@@ -530,6 +534,10 @@ msgstr "每个档案的存档数据保存在各自的服务器上，游戏前后
 msgid "Eden emulator for PlayStation 5"
 msgstr "适用于 PlayStation 5 的 Eden 模拟器"
 
+#: pe/ui/settings.cpp
+msgid "Eden's debug messages in the logs of a game."
+msgstr "游戏日志中包含 Eden 的调试信息。"
+
 #. Label of the shortcut that ends the running game.
 #: pe/ui/settings.cpp
 msgid "END GAME"
@@ -650,6 +658,22 @@ msgstr "帧率显示"
 #: pe/ui/settings.cpp
 msgid "FPS OVERLAY"
 msgstr "帧率显示"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen multiplier"
+msgstr "补帧倍率"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen target"
+msgstr "补帧目标帧率"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation"
+msgstr "帧生成"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."
+msgstr "帧生成需要将 Lossless Scaling 的 Lossless.dll 放在 lossless 文件夹中。"
 
 #: settings_store.h
 msgid "French"
@@ -821,6 +845,10 @@ msgstr "请将 keys、firmware 和 roms 文件夹放在一起。按△键使用�
 #: pe/ui/save_sync.cpp
 msgid "Keep this console's"
 msgstr "保留此主机的"
+
+#: pe/ui/settings.cpp
+msgid "Keeps the last line before a crash, but games stutter. From the next start."
+msgstr "保留崩溃前的最后一行，但游戏会卡顿。下次启动时生效。"
 
 #: pe/ui/settings.cpp
 msgid "Keeps what a game reads back from the GPU exact. Off is faster, and some effects break."
@@ -1836,7 +1864,7 @@ msgstr "正在重试。"
 msgid "Turn on or off"
 msgstr "开启或关闭"
 
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "Unavailable"
 msgstr "不可用"
 
@@ -1995,6 +2023,10 @@ msgstr "使用此主机的存档数据；游戏结束后同步。"
 msgid "with {0}"
 msgstr "与 {0}"
 
+#: pe/ui/settings.cpp
+msgid "Write logs at once"
+msgstr "立即写入日志"
+
 #: pe/ui/save_sync.cpp
 msgid "You are asked again next time."
 msgstr "下次会再次询问。"
@@ -2056,7 +2088,7 @@ msgid "{0} games installed"
 msgstr "已安装 {0} 个游戏"
 
 #. {0} is 60 or 120 (hertz).
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "{0} Hz"
 msgstr "{0} Hz"
 

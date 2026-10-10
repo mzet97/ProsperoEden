@@ -144,6 +144,10 @@ msgid "Australia"
 msgstr "Australia"
 
 #: pe/ui/game_options.cpp
+msgid "Auto"
+msgstr "Automatico"
+
+#: pe/ui/game_options.cpp
 msgid "Automatic"
 msgstr "Automatico"
 
@@ -530,6 +534,10 @@ msgstr "I salvataggi di ogni profilo su un server proprio, sincronizzati prima e
 msgid "Eden emulator for PlayStation 5"
 msgstr "Emulatore Eden per PlayStation 5"
 
+#: pe/ui/settings.cpp
+msgid "Eden's debug messages in the logs of a game."
+msgstr "I messaggi di debug di Eden nei log di un gioco."
+
 #. Label of the shortcut that ends the running game.
 #: pe/ui/settings.cpp
 msgid "END GAME"
@@ -650,6 +658,22 @@ msgstr "Contatore FPS"
 #: pe/ui/settings.cpp
 msgid "FPS OVERLAY"
 msgstr "CONTATORE FPS"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen multiplier"
+msgstr "Moltiplicatore generazione fotogrammi"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen target"
+msgstr "Obiettivo generazione fotogrammi"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation"
+msgstr "Generazione di fotogrammi"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."
+msgstr "La generazione di fotogrammi richiede Lossless.dll, di Lossless Scaling, nella cartella lossless."
 
 #: settings_store.h
 msgid "French"
@@ -821,6 +845,10 @@ msgstr "Tieni insieme le cartelle keys, firmware e roms. TRIANGOLO usa la cartel
 #: pe/ui/save_sync.cpp
 msgid "Keep this console's"
 msgstr "Tieni quelli della console"
+
+#: pe/ui/settings.cpp
+msgid "Keeps the last line before a crash, but games stutter. From the next start."
+msgstr "Conserva l'ultima riga prima di un crash, ma i giochi scattano. Dal prossimo avvio."
 
 #: pe/ui/settings.cpp
 msgid "Keeps what a game reads back from the GPU exact. Off is faster, and some effects break."
@@ -1836,7 +1864,7 @@ msgstr "Nuovo tentativo."
 msgid "Turn on or off"
 msgstr "Attiva o disattiva"
 
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "Unavailable"
 msgstr "Non disponibile"
 
@@ -1995,6 +2023,10 @@ msgstr "Con i salvataggi della console; vengono sincronizzati dopo il gioco."
 msgid "with {0}"
 msgstr "con {0}"
 
+#: pe/ui/settings.cpp
+msgid "Write logs at once"
+msgstr "Scrivi i log subito"
+
 #: pe/ui/save_sync.cpp
 msgid "You are asked again next time."
 msgstr "La prossima volta ti verrà richiesto."
@@ -2056,7 +2088,7 @@ msgid "{0} games installed"
 msgstr "{0} giochi installati"
 
 #. {0} is 60 or 120 (hertz).
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "{0} Hz"
 msgstr "{0} Hz"
 

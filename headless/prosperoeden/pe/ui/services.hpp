@@ -284,11 +284,17 @@ struct Preferences
     int volume = 100; // game volume, 0-100
     bool mute = false;
     bool detailed_logging = false;
+    bool immediate_logs = false; // every log line written as it comes; from the next start
     int renderer = 1; // 0 OpenGL, 1 Vulkan
     int resolution = 2;
     int filter = 0;
     int refresh = 0; // the output while a game runs: 0 60 Hz, 1 120 Hz
     int output = 0;  // the size of the picture, menu and games: 0 1080p, 1 1440p, 2 2160p
+    // Lossless Scaling frame generation (Vulkan only): between a game's own frames, show
+    // frames generated from them, up to the output's rate.
+    bool frame_gen = false;
+    int frame_gen_target = 0;      // index into kFrameGenTargetKeys: 0 auto, then 60/90/120/144/240
+    int frame_gen_multiplier = 0;  // index into kFrameGenMultiplierKeys: 2x, 3x, 4x
     bool vibration = true;
     int language = 0;
     int menu_volume = 70; // launcher sounds, 0-100
@@ -316,6 +322,9 @@ struct GameSettings
     int filter = -1;     // index into Services::filter_labels
     int refresh = -1;    // 0 60 Hz, 1 120 Hz
     int hud = -1;        // FPS overlay
+    int frame_gen = -1;  // Lossless Scaling frame generation (Vulkan only)
+    int frame_gen_target = -1;      // index into kFrameGenTargetKeys
+    int frame_gen_multiplier = -1;  // index into kFrameGenMultiplierKeys
     int volume = -1;     // game volume, 0-100
     int mute = -1;
     int vibration = -1;
@@ -423,6 +432,12 @@ class Services
     virtual const std::vector<std::string> &resolution_labels() = 0; // "1x (native)"
     virtual const std::vector<std::string> &resolution_keys() = 0;   // "1x"
     virtual const std::vector<std::string> &filter_labels() = 0;
+    // Frame generation: 0 this build has none (its settings are not shown), 1 the user's
+    // Lossless.dll is missing (they are shown greyed out), 2 ready.
+    virtual int frame_gen_state()
+    {
+        return 0;
+    }
     virtual const std::vector<std::string> &language_labels() = 0;
     virtual std::string language_region(int language) = 0;
     virtual std::string setup_details() = 0;

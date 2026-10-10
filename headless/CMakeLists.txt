@@ -995,6 +995,28 @@ if(PS5_NATIVE)
     string(REPLACE "                ASSERT(r == int(nso_header.segments[i].size));" "                if (r != int(nso_header.segments[i].size)) return std::nullopt;" nso_source "${nso_source}")
     string(REPLACE "                std::memcpy(codeset.memory.data() + module_start + nso_header.segments[i].location, decompressed_size.data(), nso_header.segments[i].size);" "" nso_source "${nso_source}")
     string(REPLACE "            } else {\n                std::memcpy(codeset.memory.data() + module_start + nso_header.segments[i].location, compressed_data.data(), nso_header.segments[i].size);" "" nso_source "${nso_source}")
+    # Cheats address the game's main module. Eden registers a cheat list for every module that
+    # has one, and the last registration wins: a cheat file without a build ID in its name
+    # (mods/<title ID>/cheat_<name>.txt) matches every module, so its cheats were applied
+    # against the last module loaded (sdk) and changed nothing in the game.
+    set(old_nso_cheats [=[        if (!cheats.empty()) {
+            system.RegisterCheatList(cheats, nso_header.build_id, load_base, image_size);]=])
+    set(new_nso_cheats [=[        if (name == "main") {
+            // The build ID a cheat file for this version of the game is named after.
+            char build[17]{};
+            for (int i = 0; i < 8; ++i)
+                std::snprintf(build + i * 2, 3, "%02X", static_cast<unsigned>(nso_header.build_id[i]));
+            std::fprintf(stderr, "[ProsperoEden] cheats: %zu entries for main (build ID %s) at %#llx (%llu bytes)\n",
+                         cheats.size(), build, static_cast<unsigned long long>(load_base),
+                         static_cast<unsigned long long>(image_size));
+        }
+        if (name == "main" && !cheats.empty()) {
+            system.RegisterCheatList(cheats, nso_header.build_id, load_base, image_size);]=])
+    string(FIND "${nso_source}" "${old_nso_cheats}" nso_cheats_offset)
+    if(nso_cheats_offset LESS 0)
+        message(FATAL_ERROR "Pinned NSO cheat registration changed")
+    endif()
+    string(REPLACE "${old_nso_cheats}" "${new_nso_cheats}" nso_source "${nso_source}")
     string(PREPEND nso_source "#include <cstdio>\n")
     write_derived("${PORT_BUILD_DIR}/nso.cpp" "${nso_source}")
     list(REMOVE_ITEM core_sources loader/nso.cpp)
@@ -1907,6 +1929,23 @@ if(EDEN_DEV_PROFILE)
     list(REMOVE_ITEM video_sources engines/maxwell_3d.cpp)
     list(APPEND video_sources "${PORT_BUILD_DIR}/maxwell_3d.cpp")
 endif()
+# The shader cache file's reader checks what it reads and keeps the whole entries of a damaged
+# file (shader_cache_reader.inc; shader_cache_check.cpp checks it on the host).
+file(READ "${PROJECT_SOURCE_DIR}/src/video_core/shader_environment.cpp" shader_environment_source)
+string(FIND "${shader_environment_source}" "void LoadPipelines(" shader_reader_begin)
+string(FIND "${shader_environment_source}" "} // namespace VideoCommon" shader_reader_end REVERSE)
+if(shader_reader_begin LESS 0 OR shader_reader_end LESS shader_reader_begin)
+    message(FATAL_ERROR "Pinned shader cache reader changed")
+endif()
+string(SUBSTRING "${shader_environment_source}" 0 ${shader_reader_begin} shader_environment_head)
+string(SUBSTRING "${shader_environment_source}" ${shader_reader_end} -1 shader_environment_tail)
+string(PREPEND shader_environment_head "#include <cstdio>\n#include <new>\n#include <stdexcept>\n#include <system_error>\n")
+write_derived("${PORT_BUILD_DIR}/shader_environment.cpp"
+    "${shader_environment_head}#include \"${EDEN_PORT_DIR}/shader_cache_reader.inc\"\n\n${shader_environment_tail}")
+set_property(SOURCE "${PORT_BUILD_DIR}/shader_environment.cpp" APPEND PROPERTY OBJECT_DEPENDS
+    "${EDEN_PORT_DIR}/shader_cache_reader.inc")
+list(REMOVE_ITEM video_sources shader_environment.cpp)
+list(APPEND video_sources "${PORT_BUILD_DIR}/shader_environment.cpp")
 set_property(TARGET video_core PROPERTY SOURCES "${video_sources}")
 
 if(PS5_NATIVE)
@@ -2142,6 +2181,10 @@ else()
     target_link_libraries(eden-memory-check PRIVATE dynarmic common)
     target_compile_options(eden-scalar-check PRIVATE -fno-rtti)
     add_executable(eden-ryujinx-check "${EDEN_PORT_DIR}/ryujinx_check.cpp")
+    add_executable(eden-shader-cache-check "${EDEN_PORT_DIR}/shader_cache_check.cpp")
+    target_include_directories(eden-shader-cache-check PRIVATE "${PROJECT_SOURCE_DIR}/src")
+    target_link_libraries(eden-shader-cache-check PRIVATE video_core)
+    target_compile_options(eden-shader-cache-check PRIVATE -fno-rtti)
     add_executable(eden-mods-check "${EDEN_PORT_DIR}/mods_check.cpp")
     target_include_directories(eden-mods-check PRIVATE "${PROJECT_SOURCE_DIR}/src")
     target_link_libraries(eden-mods-check PRIVATE core)
@@ -2274,12 +2317,12 @@ if(EDEN_PS5_OPENGL)
     target_sources(eden-headless PRIVATE "${EDEN_PORT_DIR}/graphics.cpp")
     # The loading screen's shader as a string for the OpenGL window; the Vulkan HUD pass includes
     # the same two files (vulkan_hud.frag).
-    file(READ "${EDEN_PORT_DIR}/loading_wordmark.glsl" loading_wordmark)
+    file(READ "${EDEN_PORT_DIR}/loading_text.glsl" loading_wordmark)
     file(READ "${EDEN_PORT_DIR}/loading_scene.glsl" loading_scene)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-        "${EDEN_PORT_DIR}/loading_wordmark.glsl" "${EDEN_PORT_DIR}/loading_scene.glsl")
+        "${EDEN_PORT_DIR}/loading_text.glsl" "${EDEN_PORT_DIR}/loading_scene.glsl")
     write_derived("${PORT_BUILD_DIR}/include/loading_scene_glsl.h"
-        "// Generated from loading_wordmark.glsl and loading_scene.glsl.\n#pragma once\ninline constexpr const char* kLoadingSceneGlsl = R\"glsl(\n${loading_wordmark}${loading_scene})glsl\";\n")
+        "// Generated from loading_text.glsl and loading_scene.glsl.\n#pragma once\ninline constexpr const char* kLoadingSceneGlsl = R\"glsl(\n${loading_wordmark}${loading_scene})glsl\";\n")
     target_compile_definitions(eden-headless PRIVATE EDEN_PS5_OPENGL=1)
     target_link_libraries(eden-headless PRIVATE PS5OpenGL::OpenGL glad)
 endif()

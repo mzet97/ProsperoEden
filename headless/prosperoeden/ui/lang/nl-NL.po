@@ -144,6 +144,10 @@ msgid "Australia"
 msgstr "Australië"
 
 #: pe/ui/game_options.cpp
+msgid "Auto"
+msgstr "Automatisch"
+
+#: pe/ui/game_options.cpp
 msgid "Automatic"
 msgstr "Automatisch"
 
@@ -530,6 +534,10 @@ msgstr "De opgeslagen data van elk profiel op een server, gesynchroniseerd voor 
 msgid "Eden emulator for PlayStation 5"
 msgstr "Eden-emulator voor PlayStation 5"
 
+#: pe/ui/settings.cpp
+msgid "Eden's debug messages in the logs of a game."
+msgstr "De debugberichten van Eden in de logs van een game."
+
 #. Label of the shortcut that ends the running game.
 #: pe/ui/settings.cpp
 msgid "END GAME"
@@ -650,6 +658,22 @@ msgstr "FPS-teller"
 #: pe/ui/settings.cpp
 msgid "FPS OVERLAY"
 msgstr "FPS-TELLER"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen multiplier"
+msgstr "Vermenigvuldiger framegeneratie"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen target"
+msgstr "Doel framegeneratie"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation"
+msgstr "Framegeneratie"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."
+msgstr "Framegeneratie heeft Lossless.dll van Lossless Scaling nodig in de map lossless."
 
 #: settings_store.h
 msgid "French"
@@ -821,6 +845,10 @@ msgstr "Houd de mappen keys, firmware en roms bij elkaar. DRIEHOEK gebruikt de g
 #: pe/ui/save_sync.cpp
 msgid "Keep this console's"
 msgstr "Die van deze console houden"
+
+#: pe/ui/settings.cpp
+msgid "Keeps the last line before a crash, but games stutter. From the next start."
+msgstr "Bewaart de laatste regel voor een crash, maar games haperen. Vanaf de volgende start."
 
 #: pe/ui/settings.cpp
 msgid "Keeps what a game reads back from the GPU exact. Off is faster, and some effects break."
@@ -1836,7 +1864,7 @@ msgstr "Nieuwe poging."
 msgid "Turn on or off"
 msgstr "In- of uitschakelen"
 
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "Unavailable"
 msgstr "Niet beschikbaar"
 
@@ -1995,6 +2023,10 @@ msgstr "Met de opgeslagen data van deze console; na de game wordt gesynchronisee
 msgid "with {0}"
 msgstr "met {0}"
 
+#: pe/ui/settings.cpp
+msgid "Write logs at once"
+msgstr "Logs direct schrijven"
+
 #: pe/ui/save_sync.cpp
 msgid "You are asked again next time."
 msgstr "De volgende keer krijg je de vraag opnieuw."
@@ -2056,7 +2088,7 @@ msgid "{0} games installed"
 msgstr "{0} games geïnstalleerd"
 
 #. {0} is 60 or 120 (hertz).
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "{0} Hz"
 msgstr "{0} Hz"
 

@@ -33,8 +33,9 @@
 #include <nlohmann/json.hpp>
 #include "devices.h"
 #include "diagnostics.h"
+#include "hud.h"
 #include "display_refresh.h"
-#include "log_pipe.h"
+#include "log_flusher.h"
 #include "mods.h"
 #include "controller_applet.h"
 #include "error_applet.h"
@@ -102,6 +103,9 @@ extern "C" std::int64_t sceKernelGetDirectMemorySize();
 extern "C" bool eden_jit_shared;  // headless/dynarmic/jit_group_support.inc
 #endif
 #include "video_core/gpu.h"
+#ifdef EDEN_PS5_FRAMEGEN
+#include "video_core/frame_gen/lossless_dll.h"
+#endif
 #include "profiles.h"
 #include "stop_limit.h"
 namespace Common {
@@ -239,14 +243,10 @@ int main(int argc, char** argv) {
 #endif
         if (!std::freopen(Eden::LogFile("stderr.log").c_str(), "w", stderr) ||
             !std::freopen(Eden::LogFile("heap.log").c_str(), "w", stdout)) return 2;
-        std::setvbuf(stderr, nullptr, _IONBF, 0);
-        // Batch SDK success traces; phase receipts still flush explicitly.
-        static char stdout_buffer[64 * 1024];
-        if (std::setvbuf(stdout, stdout_buffer, _IOFBF, sizeof(stdout_buffer)) != 0) return 2;
-        // Console storage writes take ~25 ms each; background threads copy both streams to disk.
-        static Eden::LogPipe stderr_pipe, stdout_pipe;
-        if (!stderr_pipe.Attach(stderr) || !stdout_pipe.Attach(stdout))
-            Eden::Report("logs", "Asynchronous log writing unavailable; writing directly");
+        // Console storage writes take ~25 ms each; a background thread writes both streams out,
+        // unless Settings > Diagnostics asks for every line at once (to find a crash).
+        static Eden::LogFlusher log_flusher;
+        if (!log_flusher.Start(Eden::LoadPreferences().immediate_logs)) return 2;
         Eden::Crash::Install(Eden::LogsDir(), Eden::kAppVersion, last_crash.restarted);
         Eden::BootTrace::Ready(Eden::LogsDir(), Eden::FilesystemAccess());
         Eden::BootTrace::Line("logs and crash handler ready (%s)", Eden::LogsDir().c_str());
@@ -865,6 +865,72 @@ int main(int argc, char** argv) {
             Settings::values.resolution_setup.SetValue(resolutions[resolution]);
             Settings::values.scaling_filter.SetValue(filters[filter]);
             Settings::UpdateRescalingInfo();
+#ifdef EDEN_PS5_FRAMEGEN
+            // Lossless Scaling frame generation (EDEN_PS5_FRAMEGEN, headless/vulkan.cmake).
+            // Settings > Video's switch, or the game's own in Library > Triangle > Video, asks
+            // for it. The app folder's framegen.txt overrides all of it, the way block-list.txt
+            // turns the block list on: its first number is the target rate in Hz, its second the
+            // multiplier.
+            //
+            // Eden's two controls work the way Eden defines them (settings.cpp). A target rate
+            // makes the pacer add as many frames as that rate needs, up to Eden's own maximum;
+            // "auto" passes 0 and leaves the multiplier in charge, which is the ratio Eden uses
+            // when no target is asked for. Per session, and before the renderer starts: the
+            // swapchain and the presentation manager read them as they are created. Vulkan only,
+            // and only when the build has the feature at all (it needs the user's own
+            // Lossless.dll).
+            {
+                const auto at = [](int index, auto count) {
+                    return std::clamp(index, 0, static_cast<int>(count) - 1);
+                };
+                const int target_index =
+                    at(video.frame_gen_target, std::size(Eden::kFrameGenTargetHz));
+                const int multiplier_index =
+                    at(video.frame_gen_multiplier, std::size(Eden::kFrameGenMultiplierValue));
+                int target = Eden::kFrameGenTargetHz[target_index];
+                int multiplier = Eden::kFrameGenMultiplierValue[multiplier_index];
+                int override_rate = -1;
+                int override_multiplier = -1;
+                std::ifstream frame_gen_file(Eden::AppFile("framegen.txt"));
+                (void)(frame_gen_file >> override_rate);
+                (void)(frame_gen_file >> override_multiplier);
+                if (override_rate > 0) target = override_rate;
+                if (override_multiplier >= 2) multiplier = override_multiplier;
+                const bool active = (override_rate >= 0 || override_multiplier >= 0 || video.frame_gen) &&
+                                    video.backend == Eden::GraphicsBackend::Vulkan;
+                Settings::values.frame_gen.SetValue(active);
+                Settings::values.frame_gen_target_rate.SetValue(
+                    active ? static_cast<unsigned>(std::min(target, 240)) : 0u);
+                Settings::values.frame_gen_multiplier.SetValue(
+                    static_cast<unsigned>(std::clamp(multiplier, 2, 4)));
+                if (active)
+                {
+                    // Both of frame generation's gates give up silently, so a session that
+                    // cannot run it looks exactly like one that never asked: the shaders load
+                    // only from the user's own Lossless Scaling library, and the shader stage
+                    // needs Vulkan memory model plus robustBufferAccess2's null descriptors.
+                    // Say what this session found, in the log and in the crash report, so the
+                    // answer does not need another console round trip.
+                    const auto folder = Common::FS::GetEdenPath(Common::FS::EdenPath::LosslessDir);
+                    const auto status =
+                        static_cast<unsigned>(VideoCore::FrameGen::GetInstalledLosslessStatus());
+                    constexpr const char* kLosslessStates[] = {
+                        "ok",         "Lossless.dll not installed", "Lossless.dll unreadable",
+                        "not a PE",   "no LSFG shaders in it",      "shader translation failed",
+                        "shader cache unusable"};
+                    Eden::Report("launch",
+                                 ("Frame generation: " +
+                                  std::string(target > 0 ? std::to_string(target) + " Hz target"
+                                                         : std::to_string(multiplier) + "x multiplier") +
+                                  "; " + folder.string() +
+                                  ": " + (status < std::size(kLosslessStates) ? kLosslessStates[status]
+                                                                             : "unknown") +
+                                  "; null descriptors " +
+                                  (Eden::DevVulkan::disable_null_descriptor ? "off" : "on"))
+                                     .c_str());
+                }
+            }
+#endif
             // The output's refresh rate while the game runs (display_refresh.h): the renderer asks
             // for it as it opens the output.
             const int refresh = video.refresh;
@@ -1156,6 +1222,7 @@ int main(int argc, char** argv) {
                     }
                 });
 #endif
+                Eden::Loading::Set(Eden::Loading::Step::game);
                 Eden::BootTrace::Line("loading the game");
                 Core::SystemResultStatus loaded;
                 try {
@@ -1193,6 +1260,7 @@ int main(int argc, char** argv) {
 #endif
                 Eden::BootTrace::Line("game loaded (status %u)", static_cast<unsigned>(loaded));
                 Eden::Report("loader", "Game loaded; initializing renderer");
+                Eden::Loading::Set(Eden::Loading::Step::graphics);
 #ifdef EDEN_PS5_OPENGL
                 // Retain the failure, then release CPU readiness and complete normal
                 // shutdown before reporting it. Unwinding before OnGpuReady can hang.
@@ -1228,6 +1296,7 @@ int main(int argc, char** argv) {
                     // every five seconds so a slow build can be told apart from a stalled one.
                     std::atomic<size_t> built{0}, total{0};
                     std::atomic<bool> counted{false};
+                    Eden::Loading::Set(Eden::Loading::Step::shaders);
                     const auto load_start = std::chrono::steady_clock::now();
                     std::jthread reporter([&](std::stop_token stop) {
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
@@ -1251,6 +1320,7 @@ int main(int argc, char** argv) {
                         [&](VideoCore::LoadCallbackStage stage, size_t value, size_t count) {
                             if (stage != VideoCore::LoadCallbackStage::Build) return;
                             built = value;
+                            Eden::Loading::Shaders(value, count);
                             total = count;
                             counted = true;
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
@@ -1328,6 +1398,7 @@ int main(int argc, char** argv) {
                     jit_list.Start(system.GetApplicationProcessProgramID(), build, code_start, code_end - code_start);
                 }
                 Eden::TakeGuestFault(); // Nothing from an earlier session belongs to this one.
+                Eden::Loading::Set(Eden::Loading::Step::starting);
                 system.Run();
 #if defined(EDEN_DEV_PROFILE) && defined(PS5_NATIVE)
                 Eden::Stall::Trace("main running");

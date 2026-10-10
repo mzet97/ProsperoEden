@@ -144,6 +144,10 @@ msgid "Australia"
 msgstr "Australia"
 
 #: pe/ui/game_options.cpp
+msgid "Auto"
+msgstr "Automaattinen"
+
+#: pe/ui/game_options.cpp
 msgid "Automatic"
 msgstr "Automaattinen"
 
@@ -530,6 +534,10 @@ msgstr "Jokaisen profiilin tallennukset omalla palvelimellaan, synkronoituna enn
 msgid "Eden emulator for PlayStation 5"
 msgstr "Eden-emulaattori PlayStation 5:lle"
 
+#: pe/ui/settings.cpp
+msgid "Eden's debug messages in the logs of a game."
+msgstr "Edenin vianetsintäviestit pelin lokeissa."
+
 #. Label of the shortcut that ends the running game.
 #: pe/ui/settings.cpp
 msgid "END GAME"
@@ -650,6 +658,22 @@ msgstr "FPS-laskuri"
 #: pe/ui/settings.cpp
 msgid "FPS OVERLAY"
 msgstr "FPS-LASKURI"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen multiplier"
+msgstr "Kuvien luonnin kerroin"
+
+#: pe/ui/game_options.cpp
+msgid "Frame gen target"
+msgstr "Kuvien luonnin tavoite"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation"
+msgstr "Kehysten luonti"
+
+#: pe/ui/game_options.cpp
+msgid "Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."
+msgstr "Kuvien generointi tarvitsee Lossless Scalingin Lossless.dll-tiedoston kansioon lossless."
 
 #: settings_store.h
 msgid "French"
@@ -821,6 +845,10 @@ msgstr "Pidä kansiot keys, firmware ja roms yhdessä. KOLMIO ottaa näkyvän ka
 #: pe/ui/save_sync.cpp
 msgid "Keep this console's"
 msgstr "Säilytä konsolin tallennukset"
+
+#: pe/ui/settings.cpp
+msgid "Keeps the last line before a crash, but games stutter. From the next start."
+msgstr "Säilyttää viimeisen rivin ennen kaatumista, mutta pelit nykivät. Seuraavasta käynnistyksestä."
 
 #: pe/ui/settings.cpp
 msgid "Keeps what a game reads back from the GPU exact. Off is faster, and some effects break."
@@ -1836,7 +1864,7 @@ msgstr "Yritetään uudelleen."
 msgid "Turn on or off"
 msgstr "Ota käyttöön tai pois"
 
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "Unavailable"
 msgstr "Ei käytettävissä"
 
@@ -1995,6 +2023,10 @@ msgstr "Konsolin tallennuksilla; ne synkronoidaan pelin jälkeen."
 msgid "with {0}"
 msgstr "palvelimeen {0}"
 
+#: pe/ui/settings.cpp
+msgid "Write logs at once"
+msgstr "Kirjoita lokit heti"
+
 #: pe/ui/save_sync.cpp
 msgid "You are asked again next time."
 msgstr "Kysytään uudelleen ensi kerralla."
@@ -2056,7 +2088,7 @@ msgid "{0} games installed"
 msgstr "{0} peliä asennettu"
 
 #. {0} is 60 or 120 (hertz).
-#: pe/ui/library.cpp
+#: pe/ui/game_options.cpp, pe/ui/library.cpp
 msgid "{0} Hz"
 msgstr "{0} Hz"
 
