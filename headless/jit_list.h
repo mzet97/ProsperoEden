@@ -53,6 +53,8 @@ extern "C" void* eden_jit_list_open();
 extern "C" void eden_jit_list_close(void* handle);
 extern "C" int eden_jit_precompile(void* handle, unsigned long long location);
 extern "C" std::size_t eden_jit_history(void* handle, unsigned long long* out, std::size_t capacity);
+extern "C" void eden_jit_groups_census(unsigned* alive, unsigned long long* blocks,
+                                       unsigned long long* sites, unsigned long long* history);
 #endif
 
 namespace Eden::JitList {

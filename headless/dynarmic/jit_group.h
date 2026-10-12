@@ -182,6 +182,13 @@ public:
     // not about to run and the game may be mapping it at that moment.
     static constexpr std::size_t history_limit = 4'000'000;
     std::vector<u64> history;
+    // Census for the development shutdown report (eden_jit_groups_census): entries
+    // held now. The caller holds `mutex`.
+    void Census(std::size_t& blocks_out, std::size_t& sites_out, std::size_t& history_out) const {
+        blocks_out = blocks.size();
+        sites_out = sites.size();
+        history_out = history.size();
+    }
     u64 invalidations = 0;
     int (*precompile)(void* member, u64 location) = nullptr;
     std::size_t (*space)(void* member) = nullptr;

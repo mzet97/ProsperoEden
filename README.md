@@ -355,6 +355,13 @@ The launcher follows the language the PS5 is set to: Arabic, Chinese (simplified
 
 Earlier versions read everything from `/data/homebrew/PPSA99008/assets/`. That folder keeps working until you choose a game files folder, and settings are migrated automatically on first launch. To move to the new layout, move `assets/keys`, `assets/firmware` and `assets/roms` into any folder, then select it in **Settings > Game files**. The release ZIP contains no user files, so copy its app files over your installation without deleting your own data.
 
+## Changes in v1.000.120
+
+- **Long sessions no longer run out of graphics memory.** Games that stream many textures (Zelda: Tears of the Kingdom after a few minutes) could close with "the game ran out of graphics memory": retained textures shielded the texture collector's scan, so it stopped reclaiming while memory kept growing. The collector's budget now counts evictions instead of visits, and a 20-minute TotK session plays through on the console.
+- **Quieter log, same behavior.** A memory-mapping warning that fired about 2,000 times at boot is now logged at most 4 times; the mapping itself is unchanged.
+- **Development builds stay playable.** Local dev packages now ship `replay=off` like the CI `-noreplay` builds, so the controller works out of the box; delete the file on the console to restore the timed replay for benchmarks.
+- **Development diagnostics.** New memory censuses (texture images/bytes beside pool usage, JIT groups alive at shutdown) plus structural checks for the GC scan, the dev package, and the H3/GMMU/tracer probes.
+
 ## Changes in v1.000.110
 
 - **Multiplayer through Eden rooms (new, experimental).** ProsperoEden can join an Eden room, so a game's Local Wireless mode reaches other players over the internet: other PS5 consoles running ProsperoEden, and Eden on a PC. Open **Settings > Multiplayer**, join a room, then start the game and choose its Local Wireless mode. The home screen shows when a room is connected, the game overlay shows the delay to the room in milliseconds, and when the connection is lost the game closes and the launcher says why. See the [setup guide](https://github.com/blackbearreloaded/ProsperoEden/blob/main/docs/MULTIPLAYER.md).

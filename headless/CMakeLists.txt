@@ -883,6 +883,8 @@ if(EDEN_DEV_PROFILE)
     # backtrace so one repro identifies the null-reader. Throttled: silent counts
     # with periodic totals afterwards (a storm must not stall the log pipe).
     # Reads the A32 block's derived file above.
+    # Gate at this CMake layer ONLY: core compiles without EDEN_DEV_PROFILE, so an
+    # inner #ifdef would silently compile the probe out (regression 8fd18e4).
     if(NOT EDEN_A32_FASTMEM)
         message(FATAL_ERROR "Dev unmapped tracer needs EDEN_A32_FASTMEM (derived memory.cpp).")
     endif()
@@ -892,10 +894,71 @@ if(EDEN_DEV_PROFILE)
     if(unmapped_at LESS 0)
         message(FATAL_ERROR "Pinned unmapped-read log changed; review the storm tracer first.")
     endif()
-    string(REPLACE "${unmapped_old}" "        if (auto const ptr = GetPointerImpl(addr, [addr, this]() {\n            LOG_ERROR(HW_Memory, \"Unmapped Read{} @ {:#016x}\", sizeof(T) * 8, addr);\n#ifdef EDEN_DEV_PROFILE\n            if (addr < 0x10000) {\n                static std::atomic<unsigned> eden_unmapped_low_total{0};\n                static std::atomic<unsigned> eden_unmapped_low_traced{0};\n                const unsigned eden_unmapped_n = eden_unmapped_low_total.fetch_add(1, std::memory_order_relaxed) + 1;\n                if (eden_unmapped_low_traced.load(std::memory_order_relaxed) < 8 && eden_unmapped_low_traced.fetch_add(1, std::memory_order_relaxed) < 8) {\n                    try {\n                        const Kernel::KThread* eden_trace_thread = system.Kernel().GetCurrentEmuThread();\n                        std::string eden_trace_frames;\n                        if (eden_trace_thread) {\n                            for (const auto& entry : Core::GetBacktrace(eden_trace_thread))\n                                eden_trace_frames += fmt::format(\" {}+{:X}\", entry.module, entry.offset);\n                        }\n                        LOG_ERROR(HW_Memory, \"EDEN_UNMAPPED_TRACE addr={:#x} size={} thread={} frames={}\", addr, sizeof(T), eden_trace_thread ? Core::GetThreadName(eden_trace_thread).value_or(\"-\") : \"-\", eden_trace_frames.empty() ? \"-\" : eden_trace_frames);\n                    } catch (...) {\n                        // Never fail the read path from a diagnostic probe.\n                    }\n                } else if (eden_unmapped_n % 8192 == 0) {\n                    LOG_ERROR(HW_Memory, \"EDEN_UNMAPPED_TOTAL low_reads={}\", eden_unmapped_n);\n                }\n            }\n#endif" unmapped_source "${unmapped_source}")
+    string(REPLACE "${unmapped_old}" "        if (auto const ptr = GetPointerImpl(addr, [addr, this]() {\n            LOG_ERROR(HW_Memory, \"Unmapped Read{} @ {:#016x}\", sizeof(T) * 8, addr);\n            if (addr < 0x10000) {\n                static std::atomic<unsigned> eden_unmapped_low_total{0};\n                static std::atomic<unsigned> eden_unmapped_low_traced{0};\n                const unsigned eden_unmapped_n = eden_unmapped_low_total.fetch_add(1, std::memory_order_relaxed) + 1;\n                if (eden_unmapped_low_traced.load(std::memory_order_relaxed) < 8 && eden_unmapped_low_traced.fetch_add(1, std::memory_order_relaxed) < 8) {\n                    try {\n                        const Kernel::KThread* eden_trace_thread = system.Kernel().GetCurrentEmuThread();\n                        std::string eden_trace_frames;\n                        if (eden_trace_thread) {\n                            for (const auto& entry : Core::GetBacktrace(eden_trace_thread))\n                                eden_trace_frames += fmt::format(\" {}+{:X}\", entry.module, entry.offset);\n                        }\n                        LOG_ERROR(HW_Memory, \"EDEN_UNMAPPED_TRACE addr={:#x} size={} thread={} frames={}\", addr, sizeof(T), eden_trace_thread ? Core::GetThreadName(eden_trace_thread).value_or(\"-\") : \"-\", eden_trace_frames.empty() ? \"-\" : eden_trace_frames);\n                    } catch (...) {\n                        // Never fail the read path from a diagnostic probe.\n                    }\n                } else if (eden_unmapped_n % 8192 == 0) {\n                    LOG_ERROR(HW_Memory, \"EDEN_UNMAPPED_TOTAL low_reads={}\", eden_unmapped_n);\n                }\n            }" unmapped_source "${unmapped_source}")
     write_derived("${PORT_BUILD_DIR}/memory.cpp" "#include <atomic>\n#include <string>\n#include \"core/arm/debug.h\"\n${unmapped_source}")
     list(REMOVE_ITEM core_sources "memory.cpp" "${PORT_BUILD_DIR}/memory.cpp")
     list(APPEND core_sources "${PORT_BUILD_DIR}/memory.cpp")
+endif()
+if(EDEN_DEV_PROFILE)
+    # Null-mapping diagnostic (H3). Eden's MapPages asserts the stored host pointer
+    # is representable; on TotK boot ~2k pages fail it (a sub-page host_ptr that the
+    # 45-bit page field cannot hold). The first few failures log base/target/device
+    # values so one repro identifies the backing placement. Throttled: silent counts
+    # with periodic totals afterwards (a storm must not stall the log pipe).
+    # Self-sufficient: its own <atomic>, no order dependency on other patches.
+    file(READ "${PORT_BUILD_DIR}/memory.cpp" mapnull_source)
+    set(mapnull_old "\"memory mapping base yield a nullptr within the table\");")
+    string(FIND "${mapnull_source}" "${mapnull_old}" mapnull_at)
+    if(mapnull_at LESS 0)
+        message(FATAL_ERROR "Pinned mapping assert changed; review the null-mapping diagnostic first.")
+    endif()
+    string(REPLACE "${mapnull_old}" "${mapnull_old}\n            if (!page_table.entries[base].Pointer()) {\n                static std::atomic<unsigned> eden_mapnull_total{0};\n                static std::atomic<unsigned> eden_mapnull_traced{0};\n                const unsigned eden_mapnull_n = eden_mapnull_total.fetch_add(1, std::memory_order_relaxed) + 1;\n                if (eden_mapnull_traced.load(std::memory_order_relaxed) < 4 && eden_mapnull_traced.fetch_add(1, std::memory_order_relaxed) < 4) {\n                    LOG_ERROR(HW_Memory, \"EDEN_MAP_NULL base={:#x} target={:#x} devptr={:#x} hostptr={:#x}\", base << YUZU_PAGEBITS, GetInteger(target), reinterpret_cast<u64>(system.DeviceMemory().GetPointer<u8>(target)), host_ptr);\n                } else if (eden_mapnull_n % 1024 == 0) {\n                    LOG_ERROR(HW_Memory, \"EDEN_MAP_NULL_TOTAL nulls={}\", eden_mapnull_n);\n                }\n            }" mapnull_source "${mapnull_source}")
+    write_derived("${PORT_BUILD_DIR}/memory.cpp" "#include <atomic>\n${mapnull_source}")
+    list(REMOVE_ITEM core_sources "memory.cpp" "${PORT_BUILD_DIR}/memory.cpp")
+    list(APPEND core_sources "${PORT_BUILD_DIR}/memory.cpp")
+endif()
+# MapPages null-pointer assert (H3 fix). Runs AFTER the dev probe above (its pin
+# is this same assert). Proven by EDEN_MAP_NULL: host_ptr reads back null when
+# the device backing sits low (devptr == base); the game never touches those
+# pages and survives minutes with them mapped, so the per-page Critical is pure
+# spam. The store is untouched; only the assert becomes a throttled warning.
+# Unconditional: the spam hits every build type.
+file(READ "${PORT_BUILD_DIR}/memory.cpp" mapnull_fix_source)
+set(mapnull_fix_old "                ASSERT_MSG(page_table.entries[base].Pointer(),\n                           \"memory mapping base yield a nullptr within the table\");")
+string(FIND "${mapnull_fix_source}" "${mapnull_fix_old}" mapnull_fix_at)
+if(mapnull_fix_at LESS 0)
+    message(FATAL_ERROR "Pinned mapping assert changed; review the H3 log fix first.")
+endif()
+string(REPLACE "${mapnull_fix_old}" "                {\n                    static std::atomic<unsigned> eden_mapnull_assert_total{0};\n                    static std::atomic<unsigned> eden_mapnull_assert_shown{0};\n                    eden_mapnull_assert_total.fetch_add(1, std::memory_order_relaxed);\n                    if (eden_mapnull_assert_shown.load(std::memory_order_relaxed) < 4 && eden_mapnull_assert_shown.fetch_add(1, std::memory_order_relaxed) < 4) {\n                        LOG_WARNING(HW_Memory, \"MapPages: stored host pointer reads back null (known benign edge, see notes.md H3); base={:#x}\", base << YUZU_PAGEBITS);\n                    }\n                }" mapnull_fix_source "${mapnull_fix_source}")
+write_derived("${PORT_BUILD_DIR}/memory.cpp" "#include <atomic>\n${mapnull_fix_source}")
+list(REMOVE_ITEM core_sources "memory.cpp" "${PORT_BUILD_DIR}/memory.cpp")
+list(APPEND core_sources "${PORT_BUILD_DIR}/memory.cpp")
+# Above the gate: the else() branch needs the path too (remove on non-dev).
+set(gmmu_header "core/device_memory_manager.inc")
+if(EDEN_DEV_PROFILE)
+    # GMMU gap diagnostic (BOW). A TotK menu-asset GPU upload reads 68 KiB with a
+    # 28 KiB unmapped tail (zeros into the texture, every time, same address).
+    # The first fault events log the gap shape (mapped/total pages) plus which
+    # read path faulted (safe = flushed, unsafe = raw), so one repro separates a
+    # size over-read (clean tail) from lost GMMU pages (holes). Throttled: silent
+    # counts with periodic totals afterwards (a storm must not stall the log pipe).
+    # The pin matches BOTH read fault sites on purpose; __PRETTY_FUNCTION__ names
+    # the enclosing ReadBlock variant (verified on the build clang). Derived header
+    # (slab_helpers precedent); single instantiation TU, so the throttle is global.
+    file(READ "${PROJECT_SOURCE_DIR}/src/${gmmu_header}" gmmu_source)
+    set(gmmu_old "            std::memset(dest_pointer, 0, copy_amount);")
+    string(FIND "${gmmu_source}" "${gmmu_old}" gmmu_at)
+    if(gmmu_at LESS 0)
+        message(FATAL_ERROR "Pinned device-read fault site changed; review the GMMU gap diagnostic first.")
+    endif()
+    string(REPLACE "${gmmu_old}" "${gmmu_old}\n            {\n                static std::atomic<unsigned> eden_gmmu_total{0};\n                static std::atomic<unsigned long long> eden_gmmu_last{0};\n                static std::atomic<unsigned> eden_gmmu_events{0};\n                const unsigned eden_gap_n = eden_gmmu_total.fetch_add(1, std::memory_order_relaxed) + 1;\n                const unsigned long long eden_addr_ull = static_cast<unsigned long long>(address);\n                if (eden_addr_ull != eden_gmmu_last.load(std::memory_order_relaxed) && eden_gmmu_events.load(std::memory_order_relaxed) < 4 && eden_gmmu_events.fetch_add(1, std::memory_order_relaxed) < 4) {\n                    eden_gmmu_last.store(eden_addr_ull, std::memory_order_relaxed);\n                    unsigned eden_mapped = 0, eden_total = 0;\n                    const DAddr eden_end = address + size;\n                    for (DAddr eden_p = address & ~static_cast<DAddr>(Memory::YUZU_PAGEMASK); eden_p < eden_end; eden_p += Memory::YUZU_PAGESIZE) {\n                        ++eden_total;\n                        if (tracked_entries[eden_p >> Memory::YUZU_PAGEBITS].compressed_physical_ptr != 0)\n                            ++eden_mapped;\n                    }\n                    const bool eden_unsafe = std::strstr(__PRETTY_FUNCTION__, \"ReadBlockUnsafe\") != nullptr;\n                    LOG_ERROR(HW_Memory, \"EDEN_GMMU_GAP site={} addr={:#x} size={} mapped_pages={} total_pages={} first_bad={:#x}\", eden_unsafe ? \"unsafe\" : \"safe\", address, size, eden_mapped, eden_total, current_vaddr);\n                } else if (eden_gap_n % 512 == 0) {\n                    LOG_ERROR(HW_Memory, \"EDEN_GMMU_GAP_TOTAL gaps={}\", eden_gap_n);\n                }\n            }" gmmu_source "${gmmu_source}")
+    string(PREPEND gmmu_source "#include <cstring>\n")
+    write_derived("${PORT_BUILD_DIR}/include/${gmmu_header}" "${gmmu_source}")
+else()
+    # No probe, no derived header: a dev-configure's copy must not linger into
+    # other configs sharing this build dir (the build then uses Eden's header).
+    file(REMOVE "${PORT_BUILD_DIR}/include/${gmmu_header}"
+                "${PORT_BUILD_DIR}/include/${gmmu_header}.in")
 endif()
 # GetPseudoDeviceId read the seed through the control data without checking that there is
 # any (a game without control data, such as a homebrew NRO): seed 0 then, as for other

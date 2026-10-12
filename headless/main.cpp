@@ -308,6 +308,15 @@ int main(int argc, char** argv) {
                                   Eden::FileExists(std::string{folder} + "/eboot.bin") ? "yes" : "no",
                                   Eden::FileExists(std::string{folder} + "/ui/fonts/montserrat-medium.pefont") ? "yes" : "no");
         Eden::BootTrace::Line("app folder: %s", Eden::AppDir().c_str());
+        // The package's own identity (tools/ci/make-dev-dist.py writes it):
+        // __DATE__/__TIME__ go stale on incremental rebuilds, so the git id
+        // is what names the running build. Absent in older packages.
+        if (std::ifstream build_id{Eden::AppFile("build-id.txt")}; build_id) {
+            std::string id_line;
+            std::getline(build_id, id_line);
+            if (!id_line.empty() && id_line.size() < 100)
+                Eden::BootTrace::Line("build id: %s", id_line.c_str());
+        }
         std::set_new_handler([] {
             ps5_opengl_heap_snapshot("allocation_failure", 0);
             std::fflush(stdout);
@@ -748,6 +757,9 @@ int main(int argc, char** argv) {
                 } else if (entry == "gc_dirty=upstream") {
                     // Eden's rule: evict GPU-written textures from the "expected" memory mark on.
                     Eden::Performance::gc_keep_dirty = false;
+                } else if (entry == "gc_scan=upstream") {
+                    // Eden's rule: the collector's budget counts visits, not evictions.
+                    Eden::Performance::gc_count_visits = true;
                 } else if (entry.starts_with("dispatch_draws=")) {
                     // Draws between Vulkan worker hand-offs: a power of two from 8 (upstream) to 512.
                     const unsigned long draws = std::strtoul(entry.c_str() + 15, nullptr, 10);
@@ -1725,6 +1737,20 @@ int main(int argc, char** argv) {
                 }
 #endif
                 system.ShutdownMainProcess();
+#ifdef EDEN_DEV_PROFILE
+                {
+                    // TotK leak census: a session's JIT groups must be gone with its
+                    // JITs; survivors (and their entry counts) are printed, not guessed.
+                    unsigned eden_groups_alive = 0;
+                    unsigned long long eden_groups_blocks = 0, eden_groups_sites = 0,
+                                       eden_groups_history = 0;
+                    eden_jit_groups_census(&eden_groups_alive, &eden_groups_blocks,
+                                           &eden_groups_sites, &eden_groups_history);
+                    LOG_INFO(Frontend, "EDEN_JIT_GROUPS alive={} blocks={} sites={} history={}",
+                             eden_groups_alive, eden_groups_blocks, eden_groups_sites,
+                             eden_groups_history);
+                }
+#endif
                 Eden::Report("shutdown", "Game stopped; releasing renderer");
 #ifndef PS5_NATIVE
                 if (devices) {

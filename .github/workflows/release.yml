@@ -233,6 +233,11 @@ jobs:
           PY
           sha256sum -c SHA256SUMS
 
+      # Dev and release share one scratch dir locally; a dev probe must never
+      # ship (derived-header linger, found pre-v1.000.120).
+      - name: Check the release has no dev probes
+        run: python3 -B tools/check-release-clean.py
+
       # Signed provenance: this ZIP was built by this workflow from this commit. Anyone can check a
       # downloaded copy with `gh attestation verify <file> -R <owner>/<repo>`. Not for pull requests
       # (a fork's run cannot sign), and not in a private repository (the plan does not include it).

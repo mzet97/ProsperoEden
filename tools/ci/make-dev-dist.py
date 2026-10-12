@@ -11,6 +11,7 @@ make-dist.py: the console only starts an app whose files are open to all.
 import hashlib
 import pathlib
 import shutil
+import subprocess
 import sys
 import zipfile
 
@@ -22,6 +23,22 @@ app = pathlib.Path(args[0]).resolve()
 name = args[1]
 if not (app / 'eboot.bin').is_file():
     sys.exit(f'{app} is not a built PPSA99008 folder')
+
+
+def build_id() -> str:
+    """Git identity of this package (sha + clean/dirty, no timestamp: equal
+    trees still give equal bytes). Best effort outside a checkout."""
+    try:
+        sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=root,
+                             capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(['git', 'status', '--porcelain=v1'], cwd=root,
+                               capture_output=True, text=True, check=True).stdout.strip()
+        return f'{sha} {"dirty" if dirty else "clean"}\n'
+    except (OSError, subprocess.CalledProcessError):
+        return 'unknown\n'
+
+
+(app / 'build-id.txt').write_text(build_id())
 dist = root / 'dist-dev'
 shutil.rmtree(dist, ignore_errors=True)
 dist.mkdir()
