@@ -4,7 +4,7 @@ Instruções para agentes trabalhando neste repositório.
 
 ## Leitura obrigatória antes de agir
 
-1. [notes.md](/var/mnt/4TB/TI/git/ProsperoEden/notes.md) — achados, estado de trabalho e pendências.
+1. [notes.md](notes.md) — achados, estado de trabalho e pendências.
 2. `docs/sdd/performance/09-results.md` — registro append-only de experimentos (fonte canônica).
 3. `docs/BUILDING.md` — como compilar; `UPSTREAM.json` — pins de dependências.
 
@@ -34,4 +34,4 @@ Instruções para agentes trabalhando neste repositório.
 
 - Diagnóstico de desempenho: `headless/performance.{h,cpp}`, marcadores `EDEN_*`.
 - Pipeline de métricas: `tools/perf/{collect,analyze,compare}.py` + `test_perf.py`.
-- Falhas conhecidas e próximos passos: ver [notes.md](/var/mnt/4TB/TI/git/ProsperoEden/notes.md) §4–§6.
+- Falhas conhecidas e próximos passos: ver [notes.md](notes.md) §4–§6.

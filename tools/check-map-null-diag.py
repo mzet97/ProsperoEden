@@ -68,6 +68,7 @@ fix = cmake[fix_at:fix_end]
 assert "EDEN_DEV_PROFILE" not in fix, "H3 fix must be unconditional"
 assert "known benign edge" in fix and "eden_mapnull_assert_shown" in fix
 assert "<atomic>" in fix
+assert "H3 log fix needs EDEN_A32_FASTMEM" in fix, "clear guard, not a cryptic READ failure"
 
 # 8. Against real Eden source when a checkout exists: the pinned commit
 # from UPSTREAM.json wins (stale mirrors may linger in .deps).

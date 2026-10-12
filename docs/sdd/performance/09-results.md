@@ -54,7 +54,7 @@ Rollback procedure: switch ou revert do commit
 | EXPA-01 | 2026-10-12 | mods (TotK) | ACCEPTED | sem mods: arco+bomba OK (visual era mod); ReadBlocks 21→7 benignos; leak +561k/ciclo (mods-independente); OOMs persistem |
 | H3-FIX | 2026-10-12 | log (TotK) | VERIFIED | assert→warning; console: 0 asserts (era 2096), 4 warnings (cap); MAPNULL devptr==base hostptr=0 |
 | CENSUS-01 | 2026-10-12 | OOM (TotK) | MEASURED | bleed +2.18G = +1.11G texturas (3511→6957 imgs) + ~1.1G heap (+837M); dirty 1673→750; grupos alive=0 ×3 EXONERADOS; sobreviventes +580k/sess (dono aberto) |
-| GCSCAN-01 | 2026-10-12 | OOM (TotK) | FIXED (validação pendente) | budget contava visitas; skips paravam scan (shield keep_dirty); fix conta evicções + scan cap 8192 + gc_scan=upstream; decisões inalteradas; 7/7 checks |
+| GCSCAN-01 | 2026-10-12 | OOM (TotK) | VERIFIED | 20-min console session, no errors (TotK 1x mods-off); images/usage flatten; budget conta evicções + scan cap 8192 + gc_scan=upstream; decisões inalteradas; 9 checks green |
 | PAD-01 | 2026-10-12 | input (TotK) | FIXED (validação pendente) | controle morto = timed replay ativo (ROM_ID==TITLE, sem replay=off; Poll pulado); pacote local nunca injetava (só CI -noreplay); build-package.sh injeta agora + check-dev-playable.py |
 
 ## Registros

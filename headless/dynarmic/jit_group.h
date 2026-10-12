@@ -186,7 +186,10 @@ public:
     // held now. The caller holds `mutex`.
     void Census(std::size_t& blocks_out, std::size_t& sites_out, std::size_t& history_out) const {
         blocks_out = blocks.size();
-        sites_out = sites.size();
+        sites_out = 0;
+        for (const auto& entry : sites) {
+            sites_out += entry.second.size();
+        }
         history_out = history.size();
     }
     u64 invalidations = 0;

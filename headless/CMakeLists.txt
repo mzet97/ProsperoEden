@@ -923,6 +923,9 @@ endif()
 # pages and survives minutes with them mapped, so the per-page Critical is pure
 # spam. The store is untouched; only the assert becomes a throttled warning.
 # Unconditional: the spam hits every build type.
+if(NOT EDEN_A32_FASTMEM)
+    message(FATAL_ERROR "H3 log fix needs EDEN_A32_FASTMEM (derived memory.cpp).")
+endif()
 file(READ "${PORT_BUILD_DIR}/memory.cpp" mapnull_fix_source)
 set(mapnull_fix_old "                ASSERT_MSG(page_table.entries[base].Pointer(),\n                           \"memory mapping base yield a nullptr within the table\");")
 string(FIND "${mapnull_fix_source}" "${mapnull_fix_old}" mapnull_fix_at)

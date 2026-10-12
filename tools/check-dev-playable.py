@@ -14,9 +14,11 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 script = (root / "tools/build-package.sh").read_text()
 
-# Baked after packaging (post-freeze, like CI), dev mode only.
+# Baked after packaging (post-freeze, like CI), dev mode only, honoring
+# REPLAY (dev-ps5.yml: on = deterministic benchmarks, no file).
+assert '[[ $mode == dev ]]' in script, "dev-only gate"
+assert '[[ ${REPLAY:-off} == off ]]' in script, "honor REPLAY"
 assert 'printf \'replay=off\\n\' > "$EDEN_PACKAGE_DIR/dev-settings.txt"' in script, \
-    "dev package must bake replay=off"
-at = script.index("replay=off")
-assert '[[ $mode == dev ]]' in script[max(0, at - 400):at], "dev-only gate"
-print("OK dev package playable (replay=off baked)")
+    "bake replay=off when playable"
+assert 'rm -f "$EDEN_PACKAGE_DIR/dev-settings.txt"' in script, "no stale file when on"
+print("OK dev package playable (replay=off baked, REPLAY honored)")
