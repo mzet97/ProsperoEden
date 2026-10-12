@@ -43,8 +43,53 @@ Rollback procedure: switch ou revert do commit
 | H-01e | 2026-10-08 | instrumentação | REQUIRES_HARDWARE_VALIDATION | 16 threads → 12 correções; suite 61/61; merged em 00a0eef |
 | GATE2A | 2026-10-09 | CI/ambiente | ACCEPTED (make-test verde) | run 37925538267: host build + suítes PASS em 26 min; PR #1 merged |
 | PR2-RUN | 2026-10-09 | CI/ambiente | ACCEPTED (3/3 jobs) | run 37936772765 success: docs GATE2A; toolchain+perf-static+make-test |
+| TRACER-01 | 2026-10-12 | instrumentação (TotK) | REQUIRES_HARDWARE_VALIDATION | `EDEN_UNMAPPED_TRACE`/`EDEN_UNMAPPED_TOTAL` em main (8fd18e4, PR #8 merged, CI verde); local replay=off ZIP pronto; repro no console pendente |
+| MAPNULL-01 | 2026-10-12 | instrumentação (TotK H3) | REQUIRES_HARDWARE_VALIDATION | `EDEN_MAP_NULL`/`EDEN_MAP_NULL_TOTAL` (não commitado); check red→green + build local DEV-EXIT=0 + 2 strings no eboot; ZIP mapnull replay=off pronto |
+| 1X-01 | 2026-10-12 | settings (TotK) | REJECTED (como fix) | 1x+framegen-off: OOMs persistem (s2 110 s, s3 8 s @ 2.13 GB); leak per-cycle domina; fix de código obrigatório |
+| BOW-01 | 2026-10-12 | GPU upload (TotK) | INCONCLUSIVE (mecanismo) | upload 68 KB @ 0x869ef000 c/ tail 28 KB unmapped → zeros; determinístico 3 procs; coincide c/ Weapon_*.png; gap GMMU indeciso |
+| BUILDID-01 | 2026-10-12 | instrumentação | ACCEPTED (infra) | `build-id.txt` + boot-trace + check red→green; DEV-EXIT=0; ZIP 68 entradas |
+| GMMU-01 | 2026-10-12 | GPU upload (bow) | BENIGNO (sem fix) | site=unsafe, tail limpa 10/17, zero impacto sem mods; fix em size calc = risco sem benefício |
+| TRACER-REG | 2026-10-12 | regressão (tracer) | FIXED (não commitado) | merge 8fd18e4 re-adicionou `#ifdef` morto (core sem macro, NO-DEF); ifdef removido + check-tracer red→green; 2 strings restauradas |
+| CCACHE-01 | 2026-10-12 | build | ACCEPTED (processo) | ninja+ccache não percebem header derivado novo; sequência `rm` .o + `CCACHE_RECACHE=1`; 6 strings verificadas no eboot |
+| EXPA-01 | 2026-10-12 | mods (TotK) | ACCEPTED | sem mods: arco+bomba OK (visual era mod); ReadBlocks 21→7 benignos; leak +561k/ciclo (mods-independente); OOMs persistem |
+| H3-FIX | 2026-10-12 | log (TotK) | VERIFIED | assert→warning; console: 0 asserts (era 2096), 4 warnings (cap); MAPNULL devptr==base hostptr=0 |
+| CENSUS-01 | 2026-10-12 | OOM (TotK) | MEASURED | bleed +2.18G = +1.11G texturas (3511→6957 imgs) + ~1.1G heap (+837M); dirty 1673→750; grupos alive=0 ×3 EXONERADOS; sobreviventes +580k/sess (dono aberto) |
+| GCSCAN-01 | 2026-10-12 | OOM (TotK) | VERIFIED | 20-min console session, no errors (TotK 1x mods-off); images/usage flatten; budget conta evicções + scan cap 8192 + gc_scan=upstream; decisões inalteradas; 9 checks green |
+| PAD-01 | 2026-10-12 | input (TotK) | FIXED (validação pendente) | controle morto = timed replay ativo (ROM_ID==TITLE, sem replay=off; Poll pulado); pacote local nunca injetava (só CI -noreplay); build-package.sh injeta agora + check-dev-playable.py |
 
 ## Registros
+
+```text
+Optimization ID: TRACER-01 (diagnóstico TotK inventory-freeze)
+Subsystem: instrumentation
+Hypothesis: identificar o thread + guest backtrace do leitor nulo
+  (`Unmapped Read64 @ 0x8`, ~1200/s durante 310-345 s) com um tracer
+  dev-only com throttle, sem estolar a log pipe.
+Evidence: /home/mzet/Downloads/ (build .110 TotK): gap de 42 s sem frames
+  + tempestade ~43k de reads @ 0x8; sem `mapping rejected`, sem asserts,
+  sem OOM; trigger `Weapon_*.png 0x202` x14.
+Baseline commit: 50be9cb (main, upstream .110 merge)
+Candidate commit: 8fd18e4 (merge PR #8: fd92330 tracer + 4 fixups até 8426da4)
+Environment: TotK 0100F2C0115B6000; build local distrobox eden-build
+  (ubuntu:26.04, 24 cores); console pendente
+Configuration: BUILD-EXIT=0, REBUILD-EXIT=0, 2 strings no ELF
+  (llvm-pie.elf); ZIP 67 entradas replay=off pronto
+Test cases: toolchain CI 38188562766 success 3/3; Release CI
+  38188562513 success; Copilot review success; sim do patch (pin x1,
+  braces ok); captura [this] compilou
+Number of repetitions: 2 builds locais + 3 CI verdes
+Baseline results: n/a
+Candidate results: BINÁRIO CONTÉM EDEN_UNMAPPED_TRACE/TOTAL;
+  ZIP replay=off pronto para PS5
+Measured difference: n/a (tracer diagnóstico dev-only)
+Variance/uncertainty: nenhuma (verificação binária determinística)
+Correctness results: gating apenas CMake (core lib sem EDEN_DEV_PROFILE);
+  first-8 + flush 1/8192 + try/catch + atomics
+Compatibility risks: nenhum (bloco ativo só com EDEN_DEV_PROFILE)
+Decision: REQUIRES_HARDWARE_VALIDATION (um repro no console resolve a
+  identidade do leitor: burst Weapon + `EDEN_UNMAPPED_TRACE` → fix final)
+Rollback procedure: revert 8426da4..fd92330 ou remover bloco CMake
+```
 
 ```text
 Optimization ID: ENV-00 (validação host Fase 0)

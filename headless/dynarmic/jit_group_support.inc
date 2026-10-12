@@ -70,6 +70,37 @@ std::shared_ptr<JitGroup> EdenApplicationGroup() {
 }
 }  // namespace
 
+// Census of live groups for the development shutdown report (main.cpp): with a
+// session's JITs gone, no group should be alive; the counts size any leak exactly.
+extern "C" void eden_jit_groups_census(unsigned* alive, unsigned long long* blocks,
+                                       unsigned long long* sites, unsigned long long* history) {
+    unsigned groups = 0;
+    std::size_t nblocks = 0, nsites = 0, nhistory = 0;
+    {
+        std::lock_guard lock{eden_groups_mutex};
+        for (auto& weak : eden_groups) {
+            auto group = weak.lock();
+            if (!group)
+                continue;
+            std::lock_guard members{group->mutex};
+            std::size_t b = 0, s = 0, h = 0;
+            group->Census(b, s, h);
+            ++groups;
+            nblocks += b;
+            nsites += s;
+            nhistory += h;
+        }
+    }
+    if (alive)
+        *alive = groups;
+    if (blocks)
+        *blocks = static_cast<unsigned long long>(nblocks);
+    if (sites)
+        *sites = static_cast<unsigned long long>(nsites);
+    if (history)
+        *history = static_cast<unsigned long long>(nhistory);
+}
+
 // Precompilation for a host thread that is no guest core (headless/jit_list.h).
 //
 // eden_jit_list_open: a handle on the application's compiled blocks, or null when there is no

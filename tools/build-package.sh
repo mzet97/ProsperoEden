@@ -48,4 +48,15 @@ elif [[ -f CANDIDATE.json ]]; then
 else
     python3 -B headless/check_package.py --check
 fi
+if [[ $mode == dev ]]; then
+    # Playable by default, like CI -noreplay: without this the profile title
+    # runs the timed input replay and the controller is never polled
+    # (main.cpp:1500). Honors REPLAY (dev-ps5.yml: on = deterministic
+    # benchmarks, no file). Delete the file on the console to restore replay.
+    if [[ ${REPLAY:-off} == off ]]; then
+        printf 'replay=off\n' > "$EDEN_PACKAGE_DIR/dev-settings.txt"
+    else
+        rm -f "$EDEN_PACKAGE_DIR/dev-settings.txt"
+    fi
+fi
 echo "== Built $EDEN_PACKAGE_DIR"

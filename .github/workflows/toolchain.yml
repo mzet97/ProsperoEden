@@ -54,6 +54,28 @@ jobs:
       - name: H-01 frame-ring structural check
         run: python3 -B tools/check-frame-ring.py
 
+      # Source-tree only (Eden-dependent part SKIPs honestly without .deps).
+      - name: H3 map-null diagnostic structural check
+        run: python3 -B tools/check-map-null-diag.py
+
+      - name: Build-id wiring check
+        run: python3 -B tools/check-build-id.py
+
+      # Source-tree only (Eden-dependent part SKIPs honestly without .deps).
+      - name: BOW GMMU-gap diagnostic structural check
+        run: python3 -B tools/check-gmmu-gap-diag.py
+
+      # Guards the 8fd18e4 regression (inner ifdef compiled the probe out).
+      - name: Unmapped tracer structural check
+        run: python3 -B tools/check-unmapped-tracer.py
+
+      # Source-tree only (Eden-dependent part SKIPs honestly without .deps).
+      - name: GC scan-liveness structural check
+        run: python3 -B tools/check-gc-scan.py
+
+      - name: Dev package playable check
+        run: python3 -B tools/check-dev-playable.py
+
   make-test:
     needs: [toolchain, perf-static]
     runs-on: ubuntu-26.04

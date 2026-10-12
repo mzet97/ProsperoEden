@@ -677,6 +677,16 @@ for old, new in [
     ('(!high_priority_mode && must_download)) {', '(!DirtyEvictions() && must_download)) {'),
     ('    Configure(false);', '    Configure(false);\n    PrefetchDownloads();'),
     ('        Configure(true);', '        Configure(true);\n        PrefetchDownloads();'),
+    # The eviction budget counts visits, not evictions: skipped images (decoding,
+    # costly, or dirty images kept below the critical mark) burn it and stop the
+    # scan, so kept images shield everything behind them. Count evictions; bound
+    # the scan separately. gc_scan=upstream restores visit counting.
+    ('    size_t num_iterations = 0;',
+     '    size_t num_iterations = 0;\n    size_t num_scanned = 0;\n    constexpr size_t max_scanned = 8192;'),
+    ('        if (num_iterations == 0) {\n            return true;\n        }\n        --num_iterations;',
+     '        if (num_iterations == 0 || num_scanned >= max_scanned) {\n            return true;\n        }\n        ++num_scanned;\n        if (::Eden::Performance::gc_count_visits.load(std::memory_order_relaxed)) {\n            --num_iterations;\n        }'),
+    ('        if ((!aggressive_mode && True(image.flags & ImageFlagBits::CostlyLoad)) || (!DirtyEvictions() && must_download)) {\n            return false;\n        }',
+     '        if ((!aggressive_mode && True(image.flags & ImageFlagBits::CostlyLoad)) || (!DirtyEvictions() && must_download)) {\n            return false;\n        }\n        if (!::Eden::Performance::gc_count_visits.load(std::memory_order_relaxed)) {\n            --num_iterations;\n        }'),
 ]:
     if gc.count(old) != 1:
         raise RuntimeError(f'Pinned GC anchor changed: {old}')
@@ -697,15 +707,29 @@ for signature, index in (
     if index == 13:
         scope += '''    if constexpr (std::is_same_v<Runtime, Vulkan::TextureCacheRuntime>) {
         if ((cost_timer || Eden::Performance::texture_budget_log.load(std::memory_order_relaxed)) &&
-            frame_tick % 300 == 0)
+            frame_tick % 300 == 0) {
+            // Census (TotK OOM): texture-actual images/bytes beside the pool-based
+            // usage, so one run separates a texture bleed from heap/guest/driver
+            // pool consumers. One LRU walk every 300 frames.
+            std::size_t eden_census_images = 0, eden_census_dirty = 0;
+            unsigned long long eden_census_bytes = 0;
+            lru_cache.ForEachItemBelow(frame_tick, [&](ImageId eden_image_id) {
+                const auto& eden_image = slot_images[eden_image_id];
+                ++eden_census_images;
+                eden_census_bytes += static_cast<unsigned long long>(eden_image.unswizzled_size_bytes);
+                if (IsDownloadable(eden_image) && False(eden_image.flags & ImageFlagBits::BadOverlap))
+                    ++eden_census_dirty;
+            });
             std::printf("EDEN_VULKAN_TEXTURE_BUDGET frame=%llu usage=%llu expected=%llu critical=%llu "
-                        "keep_dirty=%d memory_short=%d\\n",
+                        "keep_dirty=%d memory_short=%d images=%zu dirty=%zu image_bytes=%llu\\n",
                         static_cast<unsigned long long>(frame_tick),
                         static_cast<unsigned long long>(total_used_memory),
                         static_cast<unsigned long long>(expected_memory),
                         static_cast<unsigned long long>(critical_memory),
                         int(Eden::Performance::gc_keep_dirty.load(std::memory_order_relaxed)),
-                        int(Eden::Performance::graphics_memory_short.load(std::memory_order_relaxed)));
+                        int(Eden::Performance::graphics_memory_short.load(std::memory_order_relaxed)),
+                        eden_census_images, eden_census_dirty, eden_census_bytes);
+        }
     }
 '''
     texture_costs.append((anchor, anchor + scope))
@@ -739,7 +763,9 @@ shader_costs = [
      '    current_pipeline = pipeline.get();\n'
      '    if (::Eden::DevVulkan::trace_pipelines) {\n'
      '        static std::unordered_set<const void*> traced;\n'
-     '        if (traced.insert(current_pipeline).second) {\n'
+     '        // Bounded: the set only dedupes first-use reports; past the cap it\n'
+     '        // stops growing (otherwise one node per new pipeline, never cleared).\n'
+     '        if (traced.size() < 8192 && traced.insert(current_pipeline).second) {\n'
      '            const auto& h = graphics_key.unique_hashes;\n'
      '            char text[256];\n'
      '            std::snprintf(text, sizeof(text), "G%zu p=%p new=%d va=%llx vb=%llx tc=%llx te=%llx gs=%llx fs=%llx",\n'
@@ -757,7 +783,8 @@ shader_costs = [
      '    }\n'
      '    if (::Eden::DevVulkan::trace_pipelines && pipeline) {\n'
      '        static std::unordered_set<const void*> traced;\n'
-     '        if (traced.insert(pipeline.get()).second) {\n'
+     '        // Bounded: same as the graphics site above (one node per pipeline).\n'
+     '        if (traced.size() < 8192 && traced.insert(pipeline.get()).second) {\n'
      '            char text[160];\n'
      '            std::snprintf(text, sizeof(text), "C%zu p=%p new=%d cs=%llx shared=%u wg=%u,%u,%u", traced.size(),\n'
      '                          (const void*)pipeline.get(), int(is_new), (unsigned long long)key.unique_hash, unsigned(key.shared_memory_size),\n'
