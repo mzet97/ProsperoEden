@@ -34,8 +34,8 @@ class FakeServices final : public ui::Services
     Eden::Multiplayer::Connection last_room_connection;
     Eden::Multiplayer::Connection saved_room{"127.0.0.1", 24872, "PlayerPS5", "private-secret"};
     Eden::Multiplayer::RoomDirectory directory{{
-        {"Community racing", "Mario Kart 8 Deluxe", "192.0.2.1", 24872, 3, 8, false, true},
-        {"Friends' island", "Animal Crossing: New Horizons", "192.0.2.2", 24872, 2, 8, true, true},
+        {"Community racing", "Kart Carnival Deluxe", "192.0.2.1", 24872, 3, 8, false, true},
+        {"Friends' island", "Echoes of the Valley", "192.0.2.2", 24872, 2, 8, true, true},
         {"Another protocol", "Other game", "192.0.2.3", 24872, 0, 8, false, false}}, {}, 0};
     Eden::Multiplayer::RoomDirectory public_rooms(const std::atomic<bool>&) override { return directory; }
     Eden::Multiplayer::Snapshot room_status() override { return room; }
@@ -240,6 +240,13 @@ class FakeServices final : public ui::Services
         game_settings_ = settings;
         return true;
     }
+    // What the keyboard gives the next time a game's RNG seed is asked for: a seed, -1 for a
+    // text that is no seed, nothing for a cancelled keyboard.
+    std::optional<std::int64_t> typed_seed;
+    std::optional<std::int64_t> ask_seed(std::int64_t, const std::atomic<bool> &) override
+    {
+        return typed_seed;
+    }
     ui::Preferences preferences() override
     {
         return preferences_;
@@ -252,6 +259,7 @@ class FakeServices final : public ui::Services
     const std::vector<std::string> &resolution_labels() override;
     const std::vector<std::string> &resolution_keys() override;
     const std::vector<std::string> &filter_labels() override;
+    const std::vector<std::string> &astc_labels() override;
     const std::vector<std::string> &language_labels() override;
     std::string language_region(int language) override;
     std::string setup_details() override;
