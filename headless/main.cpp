@@ -720,6 +720,17 @@ int main(int argc, char** argv) {
         }
         Common::Log::Start();
         SCOPE_EXIT { Common::Log::Stop(); };
+#ifdef PS5_NATIVE
+        {
+            // The pool the guest's memory, the JIT, the heap and the Vulkan heaps share. A PS5 Pro
+            // gives 13,504 MiB to a title with attribute3 bit 22 (sce_sys/param.json) and 12,288 MiB
+            // without it (base PS5 memory; system software 13.60): the line says which one this run has.
+            const std::int64_t pool = sceKernelGetDirectMemorySize();
+            const bool pro = pool > (std::int64_t{12} << 30);
+            Eden::Report("memory", ("direct memory pool " + std::to_string(pool >> 20) + " MiB, PS5 Pro memory mode " +
+                                    (pro ? "active" : "inactive")).c_str());
+        }
+#endif
         #ifdef EDEN_PS5_OPENGL
         Settings::values.renderer_backend = backend == Eden::GraphicsBackend::Vulkan ?
             Settings::RendererBackend::Vulkan : Settings::RendererBackend::OpenGL_GLSL;

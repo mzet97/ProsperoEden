@@ -15,7 +15,7 @@ plain python3:
 
 When an Eden checkout is present (.deps/mirror-*/src/video_core/...), it also
 verifies the three anchors against the real Eden source. Without one, that
-part reports SKIP (honest, not green).
+part is skipped.
 """
 import glob
 import json
@@ -27,7 +27,7 @@ port = (root / "tools/prepare-vulkan-port.py").read_text()
 perf = (root / "headless/performance.h").read_text()
 main = (root / "headless/main.cpp").read_text()
 
-# 1. The flag exists, defaults to the fix, and has an upstream escape hatch.
+# 1. The flag exists, defaults to the fix, and has an Eden-behavior escape hatch.
 assert "gc_count_visits{false}" in perf, "flag default"
 assert "gc_scan=upstream" in perf, "flag documented"
 assert 'entry == "gc_scan=upstream"' in main, "settings parse"
@@ -41,6 +41,7 @@ assert "max_scanned = 8192" in port, "scan bound"
 # under the upstream flag, evictions only without it.
 assert "num_iterations == 0 || num_scanned >= max_scanned" in port, "stop rule"
 assert "++num_scanned;" in port, "visit count"
+assert "num_scanned = 0;" in port, "fresh allowance for the aggressive pass"
 assert port.count("gc_count_visits.load(std::memory_order_relaxed)") == 2, \
     "flag read at both burn sites"
 
@@ -48,7 +49,7 @@ assert port.count("gc_count_visits.load(std::memory_order_relaxed)") == 2, \
 # relies on must match exactly once (configure fails on drift too).
 mirrors = sorted(glob.glob(str(root / ".deps/mirror-*/src/video_core/texture_cache/texture_cache.h")))
 if not mirrors:
-    print("SKIP pin-vs-source: no Eden texture_cache.h (structural checks passed)")
+    print("check-gc-scan: SKIPPED pin-vs-source (no Eden texture_cache.h; structural checks passed)")
     sys.exit(0)
 eden_commit = ""
 try:
@@ -66,4 +67,4 @@ anchors = [
 ]
 for anchor in anchors:
     assert eden.count(anchor) == 1, f"anchor must match {eden_path} exactly once: {anchor[:60]!r}"
-print(f"OK gc scan liveness ({eden_path})")
+print(f"GC scan liveness: evictions counted, scan bounded, flag wired; anchors pinned to {eden_path.name} PASS")
