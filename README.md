@@ -10,7 +10,7 @@
 
 **ProsperoEden is an unofficial PlayStation 5 port of [Eden](https://github.com/eden-emulator/mirror)** - an accurate, high-performance emulator. All credit for the emulator core belongs to the Eden project and its contributors. ProsperoEden is not affiliated with or endorsed by the Eden team or Sony.
 
-This is an early alpha. Video, audio, controller input, and saves have been confirmed working. Compatibility and performance will vary between games. The current release is **v1.002.000**. What changed in it, and in every release before, is in the [changelog](docs/CHANGELOG.md#v1002000).
+This is an early alpha. Video, audio, controller input, and saves have been confirmed working. Compatibility and performance will vary between games. The current release is **v1.003.000**. What changed in it, and in every release before, is in the [changelog](docs/CHANGELOG.md#v1003000).
 
 ## Source code
 
@@ -66,7 +66,7 @@ Local-wireless multiplayer through Eden rooms is new in v1.000.110 and experimen
 - **In-game shortcuts** - a performance overlay (Touchpad + R1), and Touchpad + L1 to end the game and return to the library. Leaving takes ten seconds at most, also while a game is still loading.
 - **Settings in one place** - a single JSON file under `/data/prosperoeden`, with game volume, mute, and detailed logging options. Logs keep the previous session.
 - **Updates from the menu** - when a newer release is listed on [homebrew.page](https://homebrew.page/ps5), ProsperoEden offers to install it each time it opens; **Skip** keeps the current version; see [Updating](docs/INSTALL.md#updating).
-- **Crash reports** - if ProsperoEden stops because of an error, it saves a report with that session's logs, starts again and shows where the report is.
+- **Crash reports** - if ProsperoEden stops because of an error, it saves a report with that session's logs, starts again and shows where the report is. **Settings > Diagnostics** also keeps the FTP log-folder path visible; attach the dated `crash-*.txt` report and its matching logs.
 - **Controllers, audio, and saves** - up to four DualSense controllers (one per signed-in PS5 user) with rumble and motion controls, game audio, and save data work out of the box. A game that gives a player a single Joy-Con is played with the whole DualSense: the shapes are that Joy-Con's four buttons, the D-pad and either stick are its stick, and L1/R1 and L2/R2 are its shoulder buttons. When the game has the Joy-Con held sideways, the DualSense is still held as usual: the stick, the buttons and the motion sensors are turned to match.
 - **Controller type per game** - some games take a Pro Controller and then only work with another controller. In **Library > Game settings > Controls**, **Controller type** gives the game a Pro Controller, the Handheld controller, Dual Joy-Cons, a Left Joy-Con or a Right Joy-Con. Left on **Automatic**, the game gets what it takes, a Pro Controller first.
 - **Typing text** - when a game asks for text (a character's name, an answer during an event), the PS5's own on-screen keyboard opens, and what you enter goes to the game. A USB or Bluetooth keyboard the PS5 supports types into it too.
@@ -105,7 +105,7 @@ Reading this from a release ZIP? The guides are at <https://github.com/blackbear
 
 ## In-game shortcuts
 
-The touchpad is pressed as a button. On its own, a tap of the touchpad presses the game's Minus button (with the usual [button mapping](docs/SETTINGS.md#button-mapping)), and a longer press holds it; a shortcut never reaches the game.
+The touchpad is pressed as a button. On its own, clicking the left half of the touchpad presses Minus (or its configured [button mapping](docs/SETTINGS.md#button-mapping)); clicking the right half presses Plus. A tap is delivered on release, and a longer press holds the button. If touch coordinates are unavailable, the configured touchpad mapping is used. Touchpad + L1/R1 shortcuts work from either half and never reach the game.
 
 | Shortcut | Action |
 |---|---|
@@ -152,11 +152,9 @@ Thank you to the people who test ProsperoEden on their own consoles and report w
 - **Phronesis**, for helping with testing.
 - **szampan** ([GitHub](https://github.com/heni0xyz)), for helping with testing.
 - **BunkinBacon**, for helping with testing.
-- **Cold** ([GitHub](https://github.com/JMUtechnologies)), for helping with testing.
-- **Bauls Deep** ([GitHub](https://github.com/bawsdeep)), for helping with testing.
-- **OverkillLabs**, for helping with testing.
+- **Cold** ([GitHub](https://github.com/JMUtechnologies)), for testing and for submitting a prototype of per-game presets and in-app compatibility reports ([#127](https://github.com/blackbearreloaded/ProsperoEden/pull/127), not merged).
 
-And to the people who contribute code:
+Thank you also to the code, documentation and translation contributors (several also help with testing):
 
 - **Mihawk** ([GitHub](https://github.com/mihawk-99)), besides the driver the Vulkan renderer runs on: cheats that can be chosen one by one, the fix for the crash when a game with cheats stops, the driver's shader cache working on the console, a fix for games that come without control data, and the driver build reading its versions from one place.
 - **quatrixone** ([GitHub](https://github.com/quatrixone)), for the Performance settings and their seven switches, also per game, and for a much faster first compilation of a game's code.
@@ -164,12 +162,17 @@ And to the people who contribute code:
 - **matschi95** ([GitHub](https://github.com/matschi95)), for the RomM integration (browsing, downloading and playing games from your own server, and save sync) and for finding and fixing the stutter that log writes caused every few seconds.
 - **v0ltfault** ([GitHub](https://github.com/v0ltfault)), for tracking down why every game ended at its first picture on system software 7.40, with a fix and a write-up of the findings.
 - **gyn7561** ([GitHub](https://github.com/gyn7561)), for bringing frame generation to the PS5, with its settings, and for the log lines that say why it is or is not running.
-- **Bauls Deep** ([GitHub](https://github.com/bawsdeep)), for the Nix shell that sets up the whole build environment with one command, for the texture collector's lookahead, where the fix for the half-second freezes began, for the development timers and the recorded-input replay, and for the FPS overlay as a system monitor.
+- **Bauls Deep** ([GitHub](https://github.com/bawsdeep)), for testing, the Slate theme and accent presets, menu button remapping, the Vulkan submission fix, the Nix shell that sets up the whole build environment with one command, for the texture collector's lookahead, where the fix for the half-second freezes began, for the development timers and the recorded-input replay, and for the FPS overlay as a system monitor.
 - **lunar-me** ([GitHub](https://github.com/lunar-me)), for a correction to the README.
-- **OverkillLabs** ([GitHub](https://github.com/OverkillLabs3)), for the fix that keeps the fast path for exclusive memory accesses with Faster CPU emulation on, and for PS5 Pro memory mode.
+- **OverkillLabs** ([GitHub](https://github.com/OverkillLabs3)), for testing, the fix that keeps the fast path for exclusive memory accesses with Faster CPU emulation on, and for PS5 Pro memory mode.
 - **EIREXE** ([GitHub](https://github.com/EIREXE)), for the RNG seed per game, which lets mods that tell an emulator from a console by where the game is loaded work.
 - **rpromas** ([GitHub](https://github.com/rpromas)), for finding and fixing the crash in games that open the microphone.
 - **mzet97** ([GitHub](https://github.com/mzet97)), for finding and fixing why the texture collector stopped freeing graphics memory, which let it fill up at resolutions above 1x.
+- **Guilherme Amado** ([GitHub](https://github.com/GuilhermeAmado)), for HD rumble through DualSense audio haptics, with motor fallback.
+- **Tiang-88** ([GitHub](https://github.com/Tiang-88)), for per-game console memory layouts and showing the game's own resolution in the performance overlay.
+- **kasobos67** ([GitHub](https://github.com/kasobos67)), for custom launcher support.
+- **Rockiu0** ([GitHub](https://github.com/Rockiu0)), for JIT and memory-access optimizations, GPU command and texture-cache improvements, Vulkan rendering fixes, CPU scheduling and vsync changes, OpenGL queue tuning, build tooling, and OnionHEN elevation support.
+- **cippy-9** ([GitHub](https://github.com/cippy-9)), for the Malay (ms-MY) translation.
 
 <!-- bbr-footer:start -->
 <!-- Generated by ps5-homebrew-dev-protocol/scripts/readme-footer. Edit the template there, not here. -->

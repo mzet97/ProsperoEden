@@ -199,6 +199,12 @@ FakeServices::FakeServices(const std::string &covers_directory)
             game.cover.clear();
         remote_.push_back(game);
     }
+    // Runtime preview: exercise the complete scrolling library without shipping game payloads.
+    for(int extra=static_cast<int>(games_.size());extra<64;++extra) {
+        ui::Game game=games_[static_cast<std::size_t>(extra)%games_.size()];
+        game.name="Sample Software "+std::to_string(extra+1); game.file=game.name+".nsp";
+        game.title_id=0x0100C00000000000ull+static_cast<std::uint64_t>(extra); games_.push_back(std::move(game));
+    }
     std::sort(games_.begin(), games_.end(),
               [](const ui::Game &a, const ui::Game &b) { return a.name < b.name; });
 }
@@ -235,7 +241,8 @@ ui::Home FakeServices::home()
         };
         // As the console does: a game taken away is not offered, the next recent one is.
         const char *const recent[] = {"Echoes of the Valley", "Kart Carnival Deluxe", "Starfall Odyssey",
-                                      "Caf\xC3\xA9 Nocturne"};
+                                      "Caf\xC3\xA9 Nocturne", "Neon Drifters", "Pocket Rally Turbo",
+                                      "Cloudline", "Ember Knights II"};
         const char *first = recent[0];
         for (const char *name : recent)
             if (game_exists(find(name).file))

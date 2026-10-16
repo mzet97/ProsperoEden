@@ -2,6 +2,41 @@
 
 What changed in each release of ProsperoEden, newest first. A release's notes on GitHub are its section here.
 
+## v1.003.000
+
+This alpha focuses on mod stability, controller support, graphics correctness and lower emulation overhead. Performance and compatibility still vary by game; these changes do not guarantee a particular frame rate.
+
+### Fixes and improvements
+
+- **TOTK + UltraCam startup crash fixed.** Large modded RomFS rebuilds could overflow the filesystem thread stack during cleanup and close the whole app. Cleanup is now iterative. Tested with TOTK **1.1.1** and an older UltraCam mod: the game reached its menu, and the user confirmed the free camera works in gameplay. Game/mod versions still need to match; this is not a claim that every UltraCam version or TOTK update works.
+- **Memory size per game.** Choose 4, 6 or 8 GiB of emulated console memory under **Settings > Performance > Memory**, with game-specific overrides for demanding mods. This uses the PS5's existing shared memory pool; it does not add physical RAM. See [Console memory](SETTINGS.md#console-memory).
+- **DualSense audio haptics.** HD rumble can use the controller's audio haptics path, with lifecycle and failure handling fixes.
+- **Touchpad and controls.** Split touchpad clicks are supported, shortcuts use the left half, and transient upright Joy-Con button events are suppressed. Core menu actions can be remapped, with translated menu keybinding labels.
+- **Clearer performance overlay.** An optional Vulkan readout shows the game's own render resolution, rather than the TV output resolution. CPU-load integration and a stray HUD accent line were corrected.
+- **Launcher polish and customization.** Slate theme and accent presets, persistent accent selection, corrected status layout, and experimental external launcher packs. See [Runtime launcher packs](RUNTIME_LAUNCHERS.md).
+- **Startup and diagnostics.** Font access is detected correctly behind sandbox data mounts; OnionHEN app-jailbreak support supplements Lapy elevation. The launcher exposes the crash-report location.
+- **Graphics fixes.** Vulkan dynamic vertex input fixes address scenes rendered as one flat colour. A RADV geometry-shader path no longer reads through null pointers. Texture updates can upload only changed block rows in large textures.
+- **CPU and GPU efficiency.** JIT page-table and instruction-generation improvements, safer batched code-cache commits, checked-fastmem improvements, reduced GPU cache-lock contention, faster register-command processing, adjusted guest scheduling/vsync, and a larger OpenGL command queue. The video core uses ThinLTO targeting Zen 2; worker topology is detected once per process.
+- **Build and language support.** Malay translation, fixes for host checks and symlinked checkouts, and refreshed contributor credits.
+
+### Thank you
+
+Thanks to everyone whose contributions landed since v1.002.000:
+
+- [Rockiu0](https://github.com/Rockiu0) — CPU/JIT, graphics, scheduling, elevation and build improvements.
+- [Tiang-88](https://github.com/Tiang-88) — per-game memory layouts and the render-resolution overlay.
+- [GuilhermeAmado](https://github.com/GuilhermeAmado) — DualSense audio haptics.
+- [kasobos67](https://github.com/kasobos67) — custom runtime launcher support.
+- [bawsdeep](https://github.com/bawsdeep) — remappable menu actions.
+- [cippy-9](https://github.com/cippy-9) — Malay translation.
+- [BlackBearReloaded](https://github.com/blackbearreloaded) — integration, testing, launcher/controller fixes, font access and the RomFS crash fix.
+
+Thanks also to [zhangmu34](https://github.com/zhangmu34) for the font-access issue report, everyone testing and reporting problems, the **Eden developers** for the emulator, and **Mihawk** and the graphics contributors for the platform work this port builds on.
+
+### Before updating
+
+Back up your saves and settings. The package contains no games, firmware or keys; keep your existing user-provided files. This remains an experimental pre-release. Long gameplay sessions and all game/mod combinations have not been exhaustively tested.
+
 ## v1.002.000
 
 - **More free memory for demanding games.** The console's memory is one pool shared by the emulated console, the emulator itself and the graphics, and part of it was held without being used. The emulated console's memory, the code caches and a reserve on the system's side now take memory only when they need it. A large open-world game at 2x has about 3.5 GiB free during play instead of 2.2 GiB, at the same frame rate, so a long session runs out of memory far later.
