@@ -66,6 +66,10 @@ msgstr "Anggaran {0} min lagi"
 msgid "About {0} s left"
 msgstr "Anggaran {0} s lagi"
 
+#: pe/ui/settings.cpp
+msgid "Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its frames plays faster too."
+msgstr "Melebihi 100%, permainan yang dikunci pada 30 FPS boleh mencapai 60, dan permainan yang mengira bingkainya juga berjalan lebih pantas."
+
 #. Label: which folders the app can read.
 #: pe/ui/browse.cpp
 msgid "ACCESS"
@@ -88,6 +92,10 @@ msgstr "Ditambah ke muat turun. Tetapan, Muat Turun memaparkan giliran."
 msgid "Added. Cross plays as this profile; left and right change its name."
 msgstr "Ditambah. Tekan Silang untuk bermain sebagai profil ini; kiri dan kanan untuk menukar namanya."
 
+#: pe/ui/library.cpp
+msgid "All cheats"
+msgstr "Semua cheat"
+
 #: pe/ui/browse.cpp
 msgid "All credit for the Eden emulator goes to its developers and contributors."
 msgstr "Semua kredit untuk emulator Eden adalah milik pembangun dan penyumbangnya."
@@ -96,9 +104,21 @@ msgstr "Semua kredit untuk emulator Eden adalah milik pembangun dan penyumbangny
 msgid "AMD FSR"
 msgstr "AMD FSR"
 
+#: pe/ui/settings.cpp
+msgid "An image of your own behind this menu."
+msgstr "Imej pilihan anda di belakang menu ini."
+
 #: eden_services.cpp
 msgid "Another language"
 msgstr "Bahasa lain"
+
+#: pe/ui/settings.cpp
+msgid "Appearance"
+msgstr "Penampilan"
+
+#: pe/ui/settings.cpp
+msgid "Apply"
+msgstr "Guna"
 
 #. The button mapping has not been changed.
 #: pe/ui/game_options.cpp, pe/ui/settings.cpp
@@ -215,9 +235,14 @@ msgid "Changed"
 msgstr "Diubah"
 
 #. What a mod is made of: cheat codes.
-#: eden_services.cpp, host/fake_services.cpp
+#: eden_services.cpp, host/fake_services.cpp, pe/ui/library.cpp
 msgid "Cheats"
 msgstr "Cheat"
+
+#. Shown under a cheat that came from the game's cheats folder (not from a mod).
+#: pe/ui/library.cpp
+msgid "Cheats folder"
+msgstr "Folder cheat"
 
 #: pe/ui/pairing.cpp
 msgid "Check that the code there is this one, and approve."
@@ -251,6 +276,14 @@ msgstr "Pilih"
 #: pe/ui/home.cpp
 msgid "Choose a game from your library."
 msgstr "Pilih game daripada perpustakaan anda."
+
+#: pe/ui/settings.cpp
+msgid "Choose a theme or change the launcher layout."
+msgstr "Pilih tema atau tukar susun atur pelancar."
+
+#: pe/ui/settings.cpp
+msgid "Choose the colours and appearance of this menu."
+msgstr "Pilih warna dan penampilan menu ini."
 
 #: pe/ui/browse.cpp
 msgid "Choose the folder that holds your keys, firmware and games"
@@ -705,6 +738,10 @@ msgstr "Kualiti penuh"
 msgid "Game audio; PS5 system-menu music is unchanged."
 msgstr "Audio game; muzik menu sistem PS5 tidak berubah."
 
+#: pe/ui/launcher.cpp
+msgid "Game cannot start now."
+msgstr "Permainan tidak dapat dimulakan sekarang."
+
 #. {0} is the reason, a sentence in English; {1} is a file.
 #: eden_services.cpp, host/fake_services.cpp
 msgid "Game could not start: {0} Details: {1}"
@@ -792,6 +829,10 @@ msgstr "Utama"
 #: pe/ui/library.cpp, pe/ui/settings.cpp
 msgid "How games are drawn and scaled to your TV."
 msgstr "Cara game dilukis dan diskalakan ke TV anda."
+
+#: pe/ui/settings.cpp
+msgid "Images in this folder: {0}"
+msgstr "Imej dalam folder ini: {0}"
 
 #. Button hint: copy a save in.
 #: pe/ui/library.cpp
@@ -914,6 +955,10 @@ msgstr "Teks lebih besar"
 #: eden_services.cpp
 msgid "Last game opened"
 msgstr "Game terakhir dibuka"
+
+#: pe/ui/settings.cpp
+msgid "Launcher"
+msgstr "Pelancar"
 
 #: pe/ui/multiplayer.cpp
 msgid "Leave / cancel"
@@ -1061,6 +1106,15 @@ msgstr "Nama samaran"
 msgid "Nickname: {0}"
 msgstr "Nama samaran: {0}"
 
+#: pe/ui/library.cpp
+msgid "No cheats"
+msgstr "Tiada cheat"
+
+#. <build ID>.txt stays as it is: a cheat file is named after the game version's build ID. {0} is a folder such as roms/Game/cheats/.
+#: pe/ui/library.cpp
+msgid "No cheats for this game yet. Copy its cheat files (<build ID>.txt) to {0}."
+msgstr "Belum ada cheat untuk game ini. Salin fail cheatnya (<build ID>.txt) ke {0}."
+
 #: pe/ui/remote.cpp
 msgid "No download source is set up. Save a file named {0} that lists your sources, as this one does with a RomM server, then open this menu again. Downloads need an FTP server running on the console, on port {1}."
 msgstr "Tiada sumber muat turun disediakan. Simpan fail bernama {0} yang menyenaraikan sumber anda, seperti contoh ini dengan pelayan RomM, kemudian buka menu ini semula. Muat turun memerlukan pelayan FTP berjalan pada konsol, pada port {1}."
@@ -1086,10 +1140,9 @@ msgstr "Tiada folder di sini."
 msgid "No mods"
 msgstr "Tiada mod"
 
-#. {0} is a folder; roms/ is a folder name (unchanged).
 #: pe/ui/library.cpp
-msgid "No mods for this game yet. Copy each mod's folder to {0}, next to roms/."
-msgstr "Belum ada mod untuk game ini. Salin folder setiap mod ke {0}, bersebelahan dengan roms/."
+msgid "No mods for this game yet. Copy each mod's folder to {0}."
+msgstr "Belum ada mod untuk game ini. Salin folder setiap mod ke {0}."
 
 #: pe/ui/multiplayer.cpp
 msgid "No public rooms are available."
@@ -1303,6 +1356,10 @@ msgstr "Portugis"
 msgid "Portuguese (Brazil)"
 msgstr "Portugis (Brazil)"
 
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Post-processing"
+msgstr "Pascapemprosesan"
+
 #. Eden is the emulator's name (unchanged).
 #: pe/ui/browse.cpp
 msgid "Powered by Eden"
@@ -1399,6 +1456,10 @@ msgstr "Bilik awam"
 #: pe/ui/multiplayer.cpp
 msgid "PUBLIC ROOMS"
 msgstr "BILIK AWAM"
+
+#: pe/ui/settings.cpp
+msgid "Put images in the wallpapers folder to show them here."
+msgstr "Letakkan imej dalam folder wallpapers untuk memaparkannya di sini."
 
 #: pe/ui/remote.cpp
 msgid "Queued"
@@ -1582,6 +1643,10 @@ msgstr "{0} disimpan. Ia menggantikan milik konsol ini."
 msgid "Saved. A display that cannot show 120 Hz stays at 60 Hz."
 msgstr "Disimpan. Paparan yang tidak dapat memaparkan 120 Hz akan kekal pada 60 Hz."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Applies the next time ProsperoEden opens."
+msgstr "Disimpan. Berkuat kuasa apabila ProsperoEden dibuka semula."
+
 #: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Saved. Applies when a game starts."
 msgstr "Disimpan. Berkuat kuasa apabila game bermula."
@@ -1591,9 +1656,18 @@ msgstr "Disimpan. Berkuat kuasa apabila game bermula."
 msgid "Saved. Full quality uses four times the graphics memory for these textures and can run out above 1x."
 msgstr "Disimpan. Kualiti penuh menggunakan empat kali ganda memori grafik untuk tekstur ini dan boleh kehabisan melebihi 1x."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Post-processing needs the Vulkan renderer."
+msgstr "Disimpan. Pascapemprosesan memerlukan pemapar Vulkan."
+
 #: pe/ui/browse.cpp
 msgid "Saved. Reopen ProsperoEden to use this folder."
 msgstr "Disimpan. Buka semula ProsperoEden untuk menggunakan folder ini."
+
+#. About the Update notices switch; homebrew.page is a site's name and stays as it is; About is the menu's last section (use its translation).
+#: pe/ui/settings.cpp
+msgid "Says when homebrew.page has a newer version. Off, only About names it."
+msgstr "Memberitahu apabila homebrew.page ada versi lebih baharu. Jika dimatikan, hanya Tentang menyebutnya."
 
 #: pe/ui/pairing.cpp
 msgid "Scan the code with your phone, or open the address below."
@@ -1665,6 +1739,10 @@ msgid "Several sources have this game. Which one should it come from?"
 msgstr "Beberapa sumber mempunyai game ini. Yang mana patut dimuat turun?"
 
 #: pe/ui/settings.cpp
+msgid "Show an image of your own behind the menu."
+msgstr "Paparkan imej pilihan anda di belakang menu."
+
+#: pe/ui/settings.cpp
 msgid "Show or hide the FPS overlay"
 msgstr "Papar atau sembunyikan lapisan FPS"
 
@@ -1709,6 +1787,11 @@ msgstr "Sepanyol (Amerika Latin)"
 #: pe/ui/settings.cpp
 msgid "Speed"
 msgstr "Kelajuan"
+
+#. Settings > Performance: how fast a game may run, as a percentage of the console it was made for.
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Speed limit"
+msgstr "Had kelajuan"
 
 #. A DualSense button.
 #: pe/ui/game_options.cpp
@@ -1875,6 +1958,10 @@ msgstr "Kemas kini tidak dapat diselesaikan"
 msgid "Theme"
 msgstr "Tema"
 
+#: pe/ui/settings.cpp
+msgid "Theme and launcher settings."
+msgstr "Tetapan tema dan pelancar."
+
 #: pe/ui/save_sync.cpp
 msgid "This console and the server both have save data the other does not know. Which one should stay? The other is kept as a backup."
 msgstr "Konsol ini dan pelayan kedua-duanya mempunyai data simpanan yang tidak diketahui oleh pihak satu lagi. Yang mana patut kekal? Yang satu lagi disimpan sebagai sandaran."
@@ -1957,6 +2044,11 @@ msgstr "Tidak tersedia"
 msgid "Understood"
 msgstr "Faham"
 
+#. A Speed limit choice: no limit at all (as fast as the console can).
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Unlimited"
+msgstr "Tanpa had"
+
 #: pe/ui/pairing.cpp
 msgid "Unlink"
 msgstr "Nyahpaut"
@@ -1979,6 +2071,11 @@ msgstr "NAIK"
 #: pe/ui/launcher.cpp, pe/ui/update.cpp
 msgid "Update available"
 msgstr "Kemas kini tersedia"
+
+#. Settings switch: whether the app says at its start that a newer release of this app is listed (not game updates).
+#: pe/ui/settings.cpp
+msgid "Update notices"
+msgstr "Pemberitahuan kemas kini"
 
 #. Button: download and install the newer release of this app now.
 #: pe/ui/update.cpp
@@ -2006,6 +2103,10 @@ msgstr "Penapis Upscaling"
 msgid "USA"
 msgstr "AS"
 
+#: pe/ui/settings.cpp
+msgid "Use another home screen, library and menu layout."
+msgstr "Gunakan susun atur lain untuk skrin utama, pustaka dan menu."
+
 #: pe/ui/browse.cpp
 msgid "Use extracted firmware NCA files. Choose the folder in Settings, Game files; restart the app after changing it."
 msgstr "Gunakan fail NCA firmware yang telah diekstrak. Pilih folder dalam Tetapan, Fail game; mulakan semula aplikasi selepas menukarnya."
@@ -2020,7 +2121,7 @@ msgid "Version {0}"
 msgstr "Versi {0}"
 
 #. {0}: the newer release's number, for example 1.000.050; homebrew.page is a site's name and stays as it is.
-#: pe/ui/launcher.cpp
+#: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Version {0} is on homebrew.page"
 msgstr "Versi {0} ada di homebrew.page"
 
@@ -2073,6 +2174,10 @@ msgstr "Menunggu {0}"
 #: pe/ui/remote.cpp
 msgid "Waiting to download"
 msgstr "Menunggu untuk dimuat turun"
+
+#: pe/ui/settings.cpp
+msgid "Wallpaper"
+msgstr "Kertas dinding"
 
 #: pe/ui/settings.cpp
 msgid "What the FPS overlay's line says, and how the chip is drawn."

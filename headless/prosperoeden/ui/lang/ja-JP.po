@@ -66,6 +66,10 @@ msgstr "残り約{0}分"
 msgid "About {0} s left"
 msgstr "残り約{0}秒"
 
+#: pe/ui/settings.cpp
+msgid "Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its frames plays faster too."
+msgstr "100% を超えると、30 FPS に固定されたゲームが 60 に届くことがあり、フレーム数で時間を数えるゲームは進行も速くなります。"
+
 #. Label: which folders the app can read.
 #: pe/ui/browse.cpp
 msgid "ACCESS"
@@ -88,6 +92,10 @@ msgstr "ダウンロードに追加しました。待機列は設定の「ダウ
 msgid "Added. Cross plays as this profile; left and right change its name."
 msgstr "追加しました。バツでこのプロフィールでプレイ、左右で名前を変更。"
 
+#: pe/ui/library.cpp
+msgid "All cheats"
+msgstr "すべてのチート"
+
 #: pe/ui/browse.cpp
 msgid "All credit for the Eden emulator goes to its developers and contributors."
 msgstr "Edenエミュレーターの功績は、すべてその開発者と貢献者のものです。"
@@ -96,9 +104,21 @@ msgstr "Edenエミュレーターの功績は、すべてその開発者と貢�
 msgid "AMD FSR"
 msgstr "AMD FSR"
 
+#: pe/ui/settings.cpp
+msgid "An image of your own behind this menu."
+msgstr "このメニューの背景に好きな画像を表示します。"
+
 #: eden_services.cpp
 msgid "Another language"
 msgstr "別の言語"
+
+#: pe/ui/settings.cpp
+msgid "Appearance"
+msgstr "外観"
+
+#: pe/ui/settings.cpp
+msgid "Apply"
+msgstr "適用"
 
 #. The button mapping has not been changed.
 #: pe/ui/game_options.cpp, pe/ui/settings.cpp
@@ -215,9 +235,14 @@ msgid "Changed"
 msgstr "変更あり"
 
 #. What a mod is made of: cheat codes.
-#: eden_services.cpp, host/fake_services.cpp
+#: eden_services.cpp, host/fake_services.cpp, pe/ui/library.cpp
 msgid "Cheats"
 msgstr "チート"
+
+#. Shown under a cheat that came from the game's cheats folder (not from a mod).
+#: pe/ui/library.cpp
+msgid "Cheats folder"
+msgstr "チートフォルダー"
 
 #: pe/ui/pairing.cpp
 msgid "Check that the code there is this one, and approve."
@@ -251,6 +276,14 @@ msgstr "選択"
 #: pe/ui/home.cpp
 msgid "Choose a game from your library."
 msgstr "ライブラリからゲームを選んでください。"
+
+#: pe/ui/settings.cpp
+msgid "Choose a theme or change the launcher layout."
+msgstr "テーマを選ぶか、ランチャーのレイアウトを変更します。"
+
+#: pe/ui/settings.cpp
+msgid "Choose the colours and appearance of this menu."
+msgstr "このメニューの色と外観を選びます。"
 
 #: pe/ui/browse.cpp
 msgid "Choose the folder that holds your keys, firmware and games"
@@ -705,6 +738,10 @@ msgstr "フル品質"
 msgid "Game audio; PS5 system-menu music is unchanged."
 msgstr "ゲームの音量です。PS5のシステムメニューの音楽は変わりません。"
 
+#: pe/ui/launcher.cpp
+msgid "Game cannot start now."
+msgstr "今はゲームを開始できません。"
+
 #. {0} is the reason, a sentence in English; {1} is a file.
 #: eden_services.cpp, host/fake_services.cpp
 msgid "Game could not start: {0} Details: {1}"
@@ -792,6 +829,10 @@ msgstr "ホーム"
 #: pe/ui/library.cpp, pe/ui/settings.cpp
 msgid "How games are drawn and scaled to your TV."
 msgstr "ゲームの描画方法と、テレビへの拡大方法。"
+
+#: pe/ui/settings.cpp
+msgid "Images in this folder: {0}"
+msgstr "このフォルダーの画像: {0}"
 
 #. Button hint: copy a save in.
 #: pe/ui/library.cpp
@@ -914,6 +955,10 @@ msgstr "文字を大きく"
 #: eden_services.cpp
 msgid "Last game opened"
 msgstr "最後に開いたゲーム"
+
+#: pe/ui/settings.cpp
+msgid "Launcher"
+msgstr "ランチャー"
 
 #: pe/ui/multiplayer.cpp
 msgid "Leave / cancel"
@@ -1061,6 +1106,15 @@ msgstr "ニックネーム"
 msgid "Nickname: {0}"
 msgstr "ニックネーム: {0}"
 
+#: pe/ui/library.cpp
+msgid "No cheats"
+msgstr "チートなし"
+
+#. <build ID>.txt stays as it is: a cheat file is named after the game version's build ID. {0} is a folder such as roms/Game/cheats/.
+#: pe/ui/library.cpp
+msgid "No cheats for this game yet. Copy its cheat files (<build ID>.txt) to {0}."
+msgstr "このゲームのチートはまだありません。チートファイル (<build ID>.txt) を {0} にコピーしてください。"
+
 #: pe/ui/remote.cpp
 msgid "No download source is set up. Save a file named {0} that lists your sources, as this one does with a RomM server, then open this menu again. Downloads need an FTP server running on the console, on port {1}."
 msgstr "ダウンロード元が設定されていません。この例（RomMサーバー）のようにダウンロード元を記載した{0}という名前のファイルを保存し、このメニューを開き直してください。ダウンロードには、本体のポート{1}でFTPサーバーが動作している必要があります。"
@@ -1086,10 +1140,9 @@ msgstr "ここにフォルダーはありません。"
 msgid "No mods"
 msgstr "MODなし"
 
-#. {0} is a folder; roms/ is a folder name (unchanged).
 #: pe/ui/library.cpp
-msgid "No mods for this game yet. Copy each mod's folder to {0}, next to roms/."
-msgstr "このゲームのMODはまだありません。各MODのフォルダーを roms/ の隣の {0} にコピーしてください。"
+msgid "No mods for this game yet. Copy each mod's folder to {0}."
+msgstr "このゲームのMODはまだありません。各MODのフォルダーを {0} にコピーしてください。"
 
 #: pe/ui/multiplayer.cpp
 msgid "No public rooms are available."
@@ -1303,6 +1356,10 @@ msgstr "ポルトガル語"
 msgid "Portuguese (Brazil)"
 msgstr "ポルトガル語（ブラジル）"
 
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Post-processing"
+msgstr "ポストプロセス"
+
 #. Eden is the emulator's name (unchanged).
 #: pe/ui/browse.cpp
 msgid "Powered by Eden"
@@ -1399,6 +1456,10 @@ msgstr "公開ルーム"
 #: pe/ui/multiplayer.cpp
 msgid "PUBLIC ROOMS"
 msgstr "公開ルーム"
+
+#: pe/ui/settings.cpp
+msgid "Put images in the wallpapers folder to show them here."
+msgstr "wallpapers フォルダーに画像を入れると、ここに表示されます。"
 
 #: pe/ui/remote.cpp
 msgid "Queued"
@@ -1582,6 +1643,10 @@ msgstr "保存日時：{0}。この本体のデータを置き換えます。"
 msgid "Saved. A display that cannot show 120 Hz stays at 60 Hz."
 msgstr "保存しました。120 Hzに対応していないディスプレイでは60 Hzのままです。"
 
+#: pe/ui/settings.cpp
+msgid "Saved. Applies the next time ProsperoEden opens."
+msgstr "保存しました。次に ProsperoEden を開いたときから反映されます。"
+
 #: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Saved. Applies when a game starts."
 msgstr "保存しました。ゲームの起動時に適用されます。"
@@ -1591,9 +1656,18 @@ msgstr "保存しました。ゲームの起動時に適用されます。"
 msgid "Saved. Full quality uses four times the graphics memory for these textures and can run out above 1x."
 msgstr "保存しました。フル品質ではこれらのテクスチャに4倍のグラフィックスメモリを使い、1xを超えると不足することがあります。"
 
+#: pe/ui/settings.cpp
+msgid "Saved. Post-processing needs the Vulkan renderer."
+msgstr "保存しました。ポストプロセスには Vulkan レンダラーが必要です。"
+
 #: pe/ui/browse.cpp
 msgid "Saved. Reopen ProsperoEden to use this folder."
 msgstr "保存しました。ProsperoEdenを開き直すと、このフォルダーが使われます。"
+
+#. About the Update notices switch; homebrew.page is a site's name and stays as it is; About is the menu's last section (use its translation).
+#: pe/ui/settings.cpp
+msgid "Says when homebrew.page has a newer version. Off, only About names it."
+msgstr "homebrew.page に新しいバージョンがあるとお知らせします。オフにすると「このアプリについて」にだけ表示されます。"
 
 #: pe/ui/pairing.cpp
 msgid "Scan the code with your phone, or open the address below."
@@ -1665,6 +1739,10 @@ msgid "Several sources have this game. Which one should it come from?"
 msgstr "このゲームは複数のダウンロード元にあります。どこからダウンロードしますか？"
 
 #: pe/ui/settings.cpp
+msgid "Show an image of your own behind the menu."
+msgstr "メニューの背景に好きな画像を表示します。"
+
+#: pe/ui/settings.cpp
 msgid "Show or hide the FPS overlay"
 msgstr "FPS表示の表示／非表示"
 
@@ -1709,6 +1787,11 @@ msgstr "スペイン語（ラテンアメリカ）"
 #: pe/ui/settings.cpp
 msgid "Speed"
 msgstr "速度"
+
+#. Settings > Performance: how fast a game may run, as a percentage of the console it was made for.
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Speed limit"
+msgstr "速度制限"
 
 #. A DualSense button.
 #: pe/ui/game_options.cpp
@@ -1875,6 +1958,10 @@ msgstr "アップデートを完了できませんでした"
 msgid "Theme"
 msgstr "テーマ"
 
+#: pe/ui/settings.cpp
+msgid "Theme and launcher settings."
+msgstr "テーマとランチャーの設定。"
+
 #: pe/ui/save_sync.cpp
 msgid "This console and the server both have save data the other does not know. Which one should stay? The other is kept as a backup."
 msgstr "この本体とサーバーの両方に、相手側にないセーブデータがあります。どちらを残しますか？もう一方はバックアップとして保管されます。"
@@ -1957,6 +2044,11 @@ msgstr "利用不可"
 msgid "Understood"
 msgstr "了解"
 
+#. A Speed limit choice: no limit at all (as fast as the console can).
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Unlimited"
+msgstr "無制限"
+
 #: pe/ui/pairing.cpp
 msgid "Unlink"
 msgstr "ペアリング解除"
@@ -1979,6 +2071,11 @@ msgstr "上へ"
 #: pe/ui/launcher.cpp, pe/ui/update.cpp
 msgid "Update available"
 msgstr "アップデートがあります"
+
+#. Settings switch: whether the app says at its start that a newer release of this app is listed (not game updates).
+#: pe/ui/settings.cpp
+msgid "Update notices"
+msgstr "アップデートのお知らせ"
 
 #. Button: download and install the newer release of this app now.
 #: pe/ui/update.cpp
@@ -2006,6 +2103,10 @@ msgstr "拡大フィルター"
 msgid "USA"
 msgstr "アメリカ"
 
+#: pe/ui/settings.cpp
+msgid "Use another home screen, library and menu layout."
+msgstr "別のホーム画面、ライブラリー、メニューのレイアウトを使います。"
+
 #: pe/ui/browse.cpp
 msgid "Use extracted firmware NCA files. Choose the folder in Settings, Game files; restart the app after changing it."
 msgstr "展開したファームウェアのNCAファイルを使ってください。フォルダーは設定の「ゲームファイル」で選び、変更後はアプリを開き直してください。"
@@ -2020,7 +2121,7 @@ msgid "Version {0}"
 msgstr "バージョン{0}"
 
 #. {0}: the newer release's number, for example 1.000.050; homebrew.page is a site's name and stays as it is.
-#: pe/ui/launcher.cpp
+#: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Version {0} is on homebrew.page"
 msgstr "バージョン{0}が homebrew.page にあります"
 
@@ -2073,6 +2174,10 @@ msgstr "{0}を待機中"
 #: pe/ui/remote.cpp
 msgid "Waiting to download"
 msgstr "ダウンロード待機中"
+
+#: pe/ui/settings.cpp
+msgid "Wallpaper"
+msgstr "壁紙"
 
 #: pe/ui/settings.cpp
 msgid "What the FPS overlay's line says, and how the chip is drawn."

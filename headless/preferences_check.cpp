@@ -53,6 +53,26 @@ int main() {
         assert(Eden::LoadPreferences(file).accent == "ice");
     }
 
+    // A wallpaper (docs/WALLPAPERS.md) survives reopening; a name that could leave the folder
+    // is neither read nor saved.
+    {
+        Eden::Preferences value;
+        value.wallpaper = "Sky Pond.png";
+        assert(Eden::SavePreferences(value, file));
+        assert(Eden::LoadPreferences(file).wallpaper == "Sky Pond.png");
+        const std::string by_name = std::string(directory) + "/wallpaper.json";
+        std::ofstream(by_name) << R"({"launcher": {"wallpaper": "beach.png", "wallpaper_blur": true}})";
+        // A "wallpaper_blur" an older build wrote reads as nothing and leaves on the next save.
+        assert(Eden::LoadPreferences(by_name).wallpaper == "beach.png");
+        assert(Eden::SavePreferences(Eden::LoadPreferences(by_name), by_name));
+        assert(Read(by_name).find("wallpaper_blur") == std::string::npos);
+        std::ofstream(by_name) << R"({"launcher": {"wallpaper": "../secrets.png"}})";
+        assert(Eden::LoadPreferences(by_name).wallpaper.empty());
+        Eden::Preferences named;
+        named.wallpaper = "a/b.png"; // the folder is not part of what is saved
+        assert(!Eden::SavePreferences(named, by_name));
+    }
+
     // Preferences round trip and validation.
     assert(Eden::SavePreferences({false, 40, true, true, Eden::GraphicsBackend::OpenGL}, file));
     auto saved = Eden::LoadPreferences(file);
@@ -61,6 +81,13 @@ int main() {
     assert(!saved.immediate_logs);
     saved.immediate_logs = true;
     assert(Eden::SavePreferences(saved, file) && Eden::LoadPreferences(file).immediate_logs);
+    // Update notices (Settings > Diagnostics): on until switched off, and kept under "system".
+    assert(saved.update_notices);
+    saved.update_notices = false;
+    assert(Eden::SavePreferences(saved, file) && !Eden::LoadPreferences(file).update_notices);
+    assert(Read(file).find("\"update_notices\": false") != std::string::npos);
+    saved.update_notices = true;
+    assert(Eden::SavePreferences(saved, file) && Eden::LoadPreferences(file).update_notices);
     assert(!Eden::SavePreferences({true, 101, false, false}, file));
     assert(Eden::LoadPreferences(file).volume == 40);
     assert(Read(file).find("\"renderer\": \"opengl\"") != std::string::npos);
@@ -93,8 +120,14 @@ int main() {
     // Last and recent games.
     assert(Eden::SaveLastGame("Sample Quest [id].nsp", file));
     assert(Eden::LoadLastGame(file) == "Sample Quest [id].nsp");
-    for (const char* invalid : {"../escape.nsp", "game.zip", "a/b.nsp"}) assert(!Eden::SaveLastGame(invalid, file));
+    for (const char* invalid : {"../escape.nsp", "game.zip", "a/b/c.nsp", "/game.nsp", ".hidden/game.nsp", "a/",
+                                "a/.nsp", "a\b.nsp", "Game/game.zip"})
+        assert(!Eden::SaveLastGame(invalid, file));
     assert(Eden::LoadLastGame(file) == "Sample Quest [id].nsp");
+    // A game in its own folder in roms/ (issue 168), and back to one directly in it.
+    assert(Eden::SaveLastGame("Sample Quest/Sample Quest [id].nsp", file));
+    assert(Eden::LoadLastGame(file) == "Sample Quest/Sample Quest [id].nsp");
+    assert(Eden::SaveLastGame("Sample Quest [id].nsp", file));
     assert(Eden::SaveRecentGame("Sample Quest.nsp", file));
     assert(Eden::SaveRecentGame("Demo Racer.xci", file));
     assert(Eden::SaveRecentGame("Sample Quest.nsp", file));
@@ -195,6 +228,15 @@ int main() {
     video.frame_gen_target = 0;
     video.frame_gen_multiplier = 0;
     assert(Eden::SavePreferences(video, file));
+    // The frame generation method defaults to LSFG (index 0) and round-trips as its key.
+    assert(video.frame_gen_method == 0);
+    assert(Read(file).find("\"frame_gen_method\": \"lsfg\"") != std::string::npos);
+    video.frame_gen_method = 1;  // "mihawkgen"
+    assert(Eden::SavePreferences(video, file));
+    assert(Eden::LoadPreferences(file).frame_gen_method == 1);
+    assert(Read(file).find("\"frame_gen_method\": \"mihawkgen\"") != std::string::npos);
+    video.frame_gen_method = 0;
+    assert(Eden::SavePreferences(video, file));
 
     // Vibration (Settings > Controls): on unless turned off.
     auto controls = Eden::LoadPreferences(file);
@@ -262,6 +304,19 @@ int main() {
            Eden::LoadGameSettings(racer, file).frame_gen == -1);
     game.frame_gen = 2;
     assert(!Eden::SaveGameSettings(racer, game, file));
+
+    // A game's own frame gen method: -1 follows Settings, 0 is LSFG, 1 is MihawkGen, 2+ refused.
+    assert(Eden::LoadGameSettings(racer, file).frame_gen_method == -1);
+    game = Eden::LoadGameSettings(racer, file);
+    game.frame_gen_method = 1;  // "mihawkgen"
+    assert(Eden::SaveGameSettings(racer, game, file));
+    assert(Eden::LoadGameSettings(racer, file).frame_gen_method == 1);
+    assert(Eden::PreferencesFor(racer, file).frame_gen_method == 1);
+    game.frame_gen_method = -1;
+    assert(Eden::SaveGameSettings(racer, game, file));
+    game.frame_gen_method = 2;  // one past the last method
+    assert(!Eden::SaveGameSettings(racer, game, file));
+    game.frame_gen_method = -1;
 
     // A game's own target rate and multiplier ride along the same path, and an index outside the
     // tables is refused the way the boolean above is.
@@ -363,6 +418,36 @@ int main() {
         assert(Eden::SaveGameSettings(racer, saved_game, layout_file));
         assert(Eden::LoadPerformance(racer, layout_file).memory_layout == 1);
     }
+    // Speed limit ("performance/speed_limit"): 100% without a file, a game's own before the general
+    // one, a value that is not one of the steps read as 100%, and both kinds of write keep it.
+    {
+        const std::string speed_file = std::string(directory) + "/speed.json";
+        assert(Eden::LoadPerformance(racer, speed_file).speed_limit == 0);
+        std::ofstream(speed_file) << R"({"performance": {"speed_limit": "200"},
+            "games": {"0100000000010000": {"performance": {"speed_limit": "unlimited"}}}})";
+        assert(Eden::LoadPerformance(racer, speed_file).speed_limit == 4);
+        assert(Eden::LoadPerformance(quest, speed_file).speed_limit == 2);
+        assert(Eden::LoadGameSettings(racer, speed_file).speed_limit == 4);
+        assert(Eden::LoadGameSettings(quest, speed_file).speed_limit == -1);
+        std::ofstream(speed_file) << R"({"performance": {"speed_limit": 200}})";
+        assert(Eden::LoadPerformance(quest, speed_file).speed_limit == 0);
+        auto general = Eden::LoadPerformance(0, speed_file);
+        general.speed_limit = 3;
+        assert(Eden::SavePerformance(0, general, speed_file));
+        assert(Read(speed_file).find("\"speed_limit\": \"300\"") != std::string::npos);
+        general.speed_limit = int(std::size(Eden::kSpeedLimitKeys));
+        assert(!Eden::SavePerformance(0, general, speed_file));
+        auto own = Eden::LoadGameSettings(racer, speed_file);
+        own.speed_limit = 1;
+        assert(Eden::SaveGameSettings(racer, own, speed_file));
+        assert(Eden::LoadPerformance(racer, speed_file).speed_limit == 1 &&
+               Eden::LoadPerformance(quest, speed_file).speed_limit == 3);
+        own.speed_limit = -1;  // back to Settings
+        assert(Eden::SaveGameSettings(racer, own, speed_file));
+        assert(Eden::LoadPerformance(racer, speed_file).speed_limit == 3);
+        own.speed_limit = int(std::size(Eden::kSpeedLimitKeys));
+        assert(!Eden::SaveGameSettings(racer, own, speed_file));
+    }
 
     // Button mapping (button_mapping.h): the usual one, a changed one, and one the file names
     // badly. Choosing a button another game button has swaps the two.
@@ -391,6 +476,31 @@ int main() {
                read[Eden::game_minus] == Eden::pad_l2 && read[Eden::game_x] == Eden::pad_triangle);
         std::ofstream(by_hand) << R"({"controls": {"mapping": {"a": "share"}}})";
         assert(Eden::LoadPreferences(by_hand).mapping == Eden::kDefaultMapping);  // no such button
+    }
+
+    // Post-processing (settings_store.h): a preset by name for every game, a game's own over it
+    // ("" is off for that game), and back to Settings; a name with a path in it is refused.
+    {
+        auto prefs = Eden::LoadPreferences(file);
+        assert(prefs.post_processing.empty());
+        prefs.post_processing = "Cinematic";
+        assert(Eden::SavePreferences(prefs, file) && Eden::LoadPreferences(file).post_processing == "Cinematic");
+        constexpr uint64_t pp_game = 0x0100000000077000;
+        auto game = Eden::LoadGameSettings(pp_game, file);
+        assert(!game.post_processing && Eden::PreferencesFor(pp_game, file).post_processing == "Cinematic");
+        game.post_processing = "";
+        assert(Eden::SaveGameSettings(pp_game, game, file));
+        assert(Eden::LoadGameSettings(pp_game, file).post_processing == std::string{});
+        assert(Eden::PreferencesFor(pp_game, file).post_processing.empty());
+        game.post_processing = "My look";
+        assert(Eden::SaveGameSettings(pp_game, game, file) && Eden::PreferencesFor(pp_game, file).post_processing == "My look");
+        game.post_processing.reset();
+        assert(Eden::SaveGameSettings(pp_game, game, file) && !Eden::LoadGameSettings(pp_game, file).post_processing);
+        assert(Eden::PreferencesFor(pp_game, file).post_processing == "Cinematic");
+        prefs.post_processing = "../escape";
+        assert(!Eden::SavePreferences(prefs, file));
+        prefs.post_processing = "";
+        assert(Eden::SavePreferences(prefs, file) && Read(file).find("post_processing") == std::string::npos);
     }
 
     // Menu keybinds (button_mapping.h): the face button that presses each core menu action. A

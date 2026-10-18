@@ -66,6 +66,10 @@ msgstr "Pozostało ok. {0} min"
 msgid "About {0} s left"
 msgstr "Pozostało ok. {0} s"
 
+#: pe/ui/settings.cpp
+msgid "Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its frames plays faster too."
+msgstr "Powyżej 100% gra zablokowana na 30 FPS może osiągnąć 60, a gra licząca swoje klatki również działa szybciej."
+
 #. Label: which folders the app can read.
 #: pe/ui/browse.cpp
 msgid "ACCESS"
@@ -88,6 +92,10 @@ msgstr "Dodano do pobierania. Kolejkę pokazuje Ustawienia, Pobieranie."
 msgid "Added. Cross plays as this profile; left and right change its name."
 msgstr "Dodano. Krzyżyk gra tym profilem; lewo i prawo zmieniają jego nazwę."
 
+#: pe/ui/library.cpp
+msgid "All cheats"
+msgstr "Wszystkie kody"
+
 #: pe/ui/browse.cpp
 msgid "All credit for the Eden emulator goes to its developers and contributors."
 msgstr "Całe uznanie za emulator Eden należy się jego twórcom i współtwórcom."
@@ -96,9 +104,21 @@ msgstr "Całe uznanie za emulator Eden należy się jego twórcom i współtwór
 msgid "AMD FSR"
 msgstr "AMD FSR"
 
+#: pe/ui/settings.cpp
+msgid "An image of your own behind this menu."
+msgstr "Własny obraz za tym menu."
+
 #: eden_services.cpp
 msgid "Another language"
 msgstr "Inny język"
+
+#: pe/ui/settings.cpp
+msgid "Appearance"
+msgstr "Wygląd"
+
+#: pe/ui/settings.cpp
+msgid "Apply"
+msgstr "Zastosuj"
 
 #. The button mapping has not been changed.
 #: pe/ui/game_options.cpp, pe/ui/settings.cpp
@@ -215,9 +235,14 @@ msgid "Changed"
 msgstr "Zmienione"
 
 #. What a mod is made of: cheat codes.
-#: eden_services.cpp, host/fake_services.cpp
+#: eden_services.cpp, host/fake_services.cpp, pe/ui/library.cpp
 msgid "Cheats"
 msgstr "Kody"
+
+#. Shown under a cheat that came from the game's cheats folder (not from a mod).
+#: pe/ui/library.cpp
+msgid "Cheats folder"
+msgstr "Folder kodów"
 
 #: pe/ui/pairing.cpp
 msgid "Check that the code there is this one, and approve."
@@ -251,6 +276,14 @@ msgstr "Wybierz"
 #: pe/ui/home.cpp
 msgid "Choose a game from your library."
 msgstr "Wybierz grę z biblioteki."
+
+#: pe/ui/settings.cpp
+msgid "Choose a theme or change the launcher layout."
+msgstr "Wybierz motyw lub zmień układ launchera."
+
+#: pe/ui/settings.cpp
+msgid "Choose the colours and appearance of this menu."
+msgstr "Wybierz kolory i wygląd tego menu."
 
 #: pe/ui/browse.cpp
 msgid "Choose the folder that holds your keys, firmware and games"
@@ -705,6 +738,10 @@ msgstr "Pełna jakość"
 msgid "Game audio; PS5 system-menu music is unchanged."
 msgstr "Dźwięk gier; muzyka menu systemowego PS5 pozostaje bez zmian."
 
+#: pe/ui/launcher.cpp
+msgid "Game cannot start now."
+msgstr "Nie można teraz uruchomić gry."
+
 #. {0} is the reason, a sentence in English; {1} is a file.
 #: eden_services.cpp, host/fake_services.cpp
 msgid "Game could not start: {0} Details: {1}"
@@ -792,6 +829,10 @@ msgstr "Start"
 #: pe/ui/library.cpp, pe/ui/settings.cpp
 msgid "How games are drawn and scaled to your TV."
 msgstr "Jak gry są renderowane i skalowane na telewizorze."
+
+#: pe/ui/settings.cpp
+msgid "Images in this folder: {0}"
+msgstr "Obrazy w tym folderze: {0}"
 
 #. Button hint: copy a save in.
 #: pe/ui/library.cpp
@@ -914,6 +955,10 @@ msgstr "Większy tekst"
 #: eden_services.cpp
 msgid "Last game opened"
 msgstr "Ostatnio uruchomiona gra"
+
+#: pe/ui/settings.cpp
+msgid "Launcher"
+msgstr "Launcher"
 
 #: pe/ui/multiplayer.cpp
 msgid "Leave / cancel"
@@ -1061,6 +1106,15 @@ msgstr "Pseudonim"
 msgid "Nickname: {0}"
 msgstr "Pseudonim: {0}"
 
+#: pe/ui/library.cpp
+msgid "No cheats"
+msgstr "Brak kodów"
+
+#. <build ID>.txt stays as it is: a cheat file is named after the game version's build ID. {0} is a folder such as roms/Game/cheats/.
+#: pe/ui/library.cpp
+msgid "No cheats for this game yet. Copy its cheat files (<build ID>.txt) to {0}."
+msgstr "Ta gra nie ma jeszcze kodów. Skopiuj jej pliki z kodami (<build ID>.txt) do {0}."
+
 #: pe/ui/remote.cpp
 msgid "No download source is set up. Save a file named {0} that lists your sources, as this one does with a RomM server, then open this menu again. Downloads need an FTP server running on the console, on port {1}."
 msgstr "Nie skonfigurowano źródła pobierania. Zapisz plik o nazwie {0} z listą swoich źródeł, tak jak ten z serwerem RomM, i otwórz to menu ponownie. Pobieranie wymaga serwera FTP działającego na konsoli, na porcie {1}."
@@ -1086,10 +1140,9 @@ msgstr "Nie ma tu folderów."
 msgid "No mods"
 msgstr "Brak modów"
 
-#. {0} is a folder; roms/ is a folder name (unchanged).
 #: pe/ui/library.cpp
-msgid "No mods for this game yet. Copy each mod's folder to {0}, next to roms/."
-msgstr "Ta gra nie ma jeszcze modów. Skopiuj folder każdego moda do {0}, obok roms/."
+msgid "No mods for this game yet. Copy each mod's folder to {0}."
+msgstr "Ta gra nie ma jeszcze modów. Skopiuj folder każdego moda do {0}."
 
 #: pe/ui/multiplayer.cpp
 msgid "No public rooms are available."
@@ -1303,6 +1356,10 @@ msgstr "Portugalski"
 msgid "Portuguese (Brazil)"
 msgstr "Portugalski (Brazylia)"
 
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Post-processing"
+msgstr "Przetwarzanie końcowe"
+
 #. Eden is the emulator's name (unchanged).
 #: pe/ui/browse.cpp
 msgid "Powered by Eden"
@@ -1399,6 +1456,10 @@ msgstr "Publiczne pokoje"
 #: pe/ui/multiplayer.cpp
 msgid "PUBLIC ROOMS"
 msgstr "PUBLICZNE POKOJE"
+
+#: pe/ui/settings.cpp
+msgid "Put images in the wallpapers folder to show them here."
+msgstr "Umieść obrazy w folderze wallpapers, aby pokazać je tutaj."
 
 #: pe/ui/remote.cpp
 msgid "Queued"
@@ -1582,6 +1643,10 @@ msgstr "Zapisano {0}. Zastąpią zapisy na konsoli."
 msgid "Saved. A display that cannot show 120 Hz stays at 60 Hz."
 msgstr "Zapisano. Ekran bez obsługi 120 Hz pozostaje przy 60 Hz."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Applies the next time ProsperoEden opens."
+msgstr "Zapisano. Zacznie działać przy następnym uruchomieniu ProsperoEden."
+
 #: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Saved. Applies when a game starts."
 msgstr "Zapisano. Zadziała po uruchomieniu gry."
@@ -1591,9 +1656,18 @@ msgstr "Zapisano. Zadziała po uruchomieniu gry."
 msgid "Saved. Full quality uses four times the graphics memory for these textures and can run out above 1x."
 msgstr "Zapisano. Pełna jakość zużywa na te tekstury cztery razy więcej pamięci graficznej i powyżej 1x może jej zabraknąć."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Post-processing needs the Vulkan renderer."
+msgstr "Zapisano. Przetwarzanie końcowe wymaga renderera Vulkan."
+
 #: pe/ui/browse.cpp
 msgid "Saved. Reopen ProsperoEden to use this folder."
 msgstr "Zapisano. Uruchom ProsperoEden ponownie, aby użyć tego folderu."
+
+#. About the Update notices switch; homebrew.page is a site's name and stays as it is; About is the menu's last section (use its translation).
+#: pe/ui/settings.cpp
+msgid "Says when homebrew.page has a newer version. Off, only About names it."
+msgstr "Informuje, gdy na homebrew.page jest nowsza wersja. Po wyłączeniu podaje ją tylko O aplikacji."
 
 #: pe/ui/pairing.cpp
 msgid "Scan the code with your phone, or open the address below."
@@ -1665,6 +1739,10 @@ msgid "Several sources have this game. Which one should it come from?"
 msgstr "Tę grę ma kilka źródeł. Z którego ma pochodzić?"
 
 #: pe/ui/settings.cpp
+msgid "Show an image of your own behind the menu."
+msgstr "Pokaż własny obraz za menu."
+
+#: pe/ui/settings.cpp
 msgid "Show or hide the FPS overlay"
 msgstr "Pokaż lub ukryj licznik FPS"
 
@@ -1709,6 +1787,11 @@ msgstr "Hiszpański (Ameryka Łacińska)"
 #: pe/ui/settings.cpp
 msgid "Speed"
 msgstr "Szybkość"
+
+#. Settings > Performance: how fast a game may run, as a percentage of the console it was made for.
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Speed limit"
+msgstr "Limit szybkości"
 
 #. A DualSense button.
 #: pe/ui/game_options.cpp
@@ -1875,6 +1958,10 @@ msgstr "Nie udało się dokończyć aktualizacji"
 msgid "Theme"
 msgstr "Motyw"
 
+#: pe/ui/settings.cpp
+msgid "Theme and launcher settings."
+msgstr "Ustawienia motywu i launchera."
+
 #: pe/ui/save_sync.cpp
 msgid "This console and the server both have save data the other does not know. Which one should stay? The other is kept as a backup."
 msgstr "Konsola i serwer mają zapisy, których druga strona nie zna. Które mają zostać? Pozostałe zostaną zachowane jako kopia zapasowa."
@@ -1957,6 +2044,11 @@ msgstr "Niedostępny"
 msgid "Understood"
 msgstr "Rozumiem"
 
+#. A Speed limit choice: no limit at all (as fast as the console can).
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Unlimited"
+msgstr "Bez limitu"
+
 #: pe/ui/pairing.cpp
 msgid "Unlink"
 msgstr "Odłącz"
@@ -1979,6 +2071,11 @@ msgstr "W GÓRĘ"
 #: pe/ui/launcher.cpp, pe/ui/update.cpp
 msgid "Update available"
 msgstr "Dostępna aktualizacja"
+
+#. Settings switch: whether the app says at its start that a newer release of this app is listed (not game updates).
+#: pe/ui/settings.cpp
+msgid "Update notices"
+msgstr "Powiadomienia o aktualizacjach"
 
 #. Button: download and install the newer release of this app now.
 #: pe/ui/update.cpp
@@ -2006,6 +2103,10 @@ msgstr "Filtr skalowania"
 msgid "USA"
 msgstr "USA"
 
+#: pe/ui/settings.cpp
+msgid "Use another home screen, library and menu layout."
+msgstr "Użyj innego układu ekranu głównego, biblioteki i menu."
+
 #: pe/ui/browse.cpp
 msgid "Use extracted firmware NCA files. Choose the folder in Settings, Game files; restart the app after changing it."
 msgstr "Użyj wypakowanych plików NCA firmware'u. Folder wybierz w menu Ustawienia, Pliki gier; po zmianie uruchom aplikację ponownie."
@@ -2020,7 +2121,7 @@ msgid "Version {0}"
 msgstr "Wersja {0}"
 
 #. {0}: the newer release's number, for example 1.000.050; homebrew.page is a site's name and stays as it is.
-#: pe/ui/launcher.cpp
+#: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Version {0} is on homebrew.page"
 msgstr "Wersja {0} jest na homebrew.page"
 
@@ -2073,6 +2174,10 @@ msgstr "Oczekuje na {0}"
 #: pe/ui/remote.cpp
 msgid "Waiting to download"
 msgstr "Oczekuje na pobranie"
+
+#: pe/ui/settings.cpp
+msgid "Wallpaper"
+msgstr "Tapeta"
 
 #: pe/ui/settings.cpp
 msgid "What the FPS overlay's line says, and how the chip is drawn."

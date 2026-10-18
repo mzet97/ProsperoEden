@@ -66,6 +66,10 @@ msgstr "Còn khoảng {0} phút"
 msgid "About {0} s left"
 msgstr "Còn khoảng {0} giây"
 
+#: pe/ui/settings.cpp
+msgid "Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its frames plays faster too."
+msgstr "Trên 100%, trò chơi bị khóa ở 30 FPS có thể đạt 60, và trò chơi đếm khung hình của nó cũng chạy nhanh hơn."
+
 #. Label: which folders the app can read.
 #: pe/ui/browse.cpp
 msgid "ACCESS"
@@ -88,6 +92,10 @@ msgstr "Đã thêm vào mục tải xuống. Cài đặt, Tải xuống hiển t
 msgid "Added. Cross plays as this profile; left and right change its name."
 msgstr "Đã thêm. Chéo để chơi bằng hồ sơ này; trái và phải đổi tên."
 
+#: pe/ui/library.cpp
+msgid "All cheats"
+msgstr "Tất cả mã gian lận"
+
 #: pe/ui/browse.cpp
 msgid "All credit for the Eden emulator goes to its developers and contributors."
 msgstr "Mọi công lao về trình giả lập Eden thuộc về các nhà phát triển và người đóng góp của dự án."
@@ -96,9 +104,21 @@ msgstr "Mọi công lao về trình giả lập Eden thuộc về các nhà phá
 msgid "AMD FSR"
 msgstr "AMD FSR"
 
+#: pe/ui/settings.cpp
+msgid "An image of your own behind this menu."
+msgstr "Một hình ảnh của riêng bạn phía sau menu này."
+
 #: eden_services.cpp
 msgid "Another language"
 msgstr "Ngôn ngữ khác"
+
+#: pe/ui/settings.cpp
+msgid "Appearance"
+msgstr "Giao diện"
+
+#: pe/ui/settings.cpp
+msgid "Apply"
+msgstr "Áp dụng"
 
 #. The button mapping has not been changed.
 #: pe/ui/game_options.cpp, pe/ui/settings.cpp
@@ -215,9 +235,14 @@ msgid "Changed"
 msgstr "Đã đổi"
 
 #. What a mod is made of: cheat codes.
-#: eden_services.cpp, host/fake_services.cpp
+#: eden_services.cpp, host/fake_services.cpp, pe/ui/library.cpp
 msgid "Cheats"
 msgstr "Mã gian lận"
+
+#. Shown under a cheat that came from the game's cheats folder (not from a mod).
+#: pe/ui/library.cpp
+msgid "Cheats folder"
+msgstr "Thư mục mã gian lận"
 
 #: pe/ui/pairing.cpp
 msgid "Check that the code there is this one, and approve."
@@ -251,6 +276,14 @@ msgstr "Chọn"
 #: pe/ui/home.cpp
 msgid "Choose a game from your library."
 msgstr "Chọn một trò chơi từ thư viện của bạn."
+
+#: pe/ui/settings.cpp
+msgid "Choose a theme or change the launcher layout."
+msgstr "Chọn chủ đề hoặc đổi bố cục trình khởi chạy."
+
+#: pe/ui/settings.cpp
+msgid "Choose the colours and appearance of this menu."
+msgstr "Chọn màu sắc và giao diện cho menu này."
 
 #: pe/ui/browse.cpp
 msgid "Choose the folder that holds your keys, firmware and games"
@@ -705,6 +738,10 @@ msgstr "Chất lượng đầy đủ"
 msgid "Game audio; PS5 system-menu music is unchanged."
 msgstr "Âm thanh trò chơi; nhạc menu hệ thống PS5 không thay đổi."
 
+#: pe/ui/launcher.cpp
+msgid "Game cannot start now."
+msgstr "Không thể bắt đầu trò chơi lúc này."
+
 #. {0} is the reason, a sentence in English; {1} is a file.
 #: eden_services.cpp, host/fake_services.cpp
 msgid "Game could not start: {0} Details: {1}"
@@ -792,6 +829,10 @@ msgstr "Trang chủ"
 #: pe/ui/library.cpp, pe/ui/settings.cpp
 msgid "How games are drawn and scaled to your TV."
 msgstr "Cách trò chơi được kết xuất và co giãn theo TV của bạn."
+
+#: pe/ui/settings.cpp
+msgid "Images in this folder: {0}"
+msgstr "Hình ảnh trong thư mục này: {0}"
 
 #. Button hint: copy a save in.
 #: pe/ui/library.cpp
@@ -914,6 +955,10 @@ msgstr "Chữ lớn hơn"
 #: eden_services.cpp
 msgid "Last game opened"
 msgstr "Trò chơi mở gần nhất"
+
+#: pe/ui/settings.cpp
+msgid "Launcher"
+msgstr "Trình khởi chạy"
 
 #: pe/ui/multiplayer.cpp
 msgid "Leave / cancel"
@@ -1061,6 +1106,15 @@ msgstr "Biệt danh"
 msgid "Nickname: {0}"
 msgstr "Biệt danh: {0}"
 
+#: pe/ui/library.cpp
+msgid "No cheats"
+msgstr "Không có mã gian lận"
+
+#. <build ID>.txt stays as it is: a cheat file is named after the game version's build ID. {0} is a folder such as roms/Game/cheats/.
+#: pe/ui/library.cpp
+msgid "No cheats for this game yet. Copy its cheat files (<build ID>.txt) to {0}."
+msgstr "Trò chơi này chưa có mã gian lận. Hãy chép các tệp mã gian lận của nó (<build ID>.txt) vào {0}."
+
 #: pe/ui/remote.cpp
 msgid "No download source is set up. Save a file named {0} that lists your sources, as this one does with a RomM server, then open this menu again. Downloads need an FTP server running on the console, on port {1}."
 msgstr "Chưa thiết lập nguồn tải xuống. Lưu một tệp tên {0} liệt kê các nguồn của bạn, như tệp này làm với một máy chủ RomM, rồi mở lại menu này. Tải xuống cần một máy chủ FTP chạy trên máy, ở cổng {1}."
@@ -1086,10 +1140,9 @@ msgstr "Không có thư mục nào."
 msgid "No mods"
 msgstr "Không có mod"
 
-#. {0} is a folder; roms/ is a folder name (unchanged).
 #: pe/ui/library.cpp
-msgid "No mods for this game yet. Copy each mod's folder to {0}, next to roms/."
-msgstr "Trò chơi này chưa có mod. Hãy chép thư mục của từng mod vào {0}, cạnh roms/."
+msgid "No mods for this game yet. Copy each mod's folder to {0}."
+msgstr "Trò chơi này chưa có mod. Hãy chép thư mục của từng mod vào {0}."
 
 #: pe/ui/multiplayer.cpp
 msgid "No public rooms are available."
@@ -1303,6 +1356,10 @@ msgstr "Tiếng Bồ Đào Nha"
 msgid "Portuguese (Brazil)"
 msgstr "Tiếng Bồ Đào Nha (Brazil)"
 
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Post-processing"
+msgstr "Hậu kỳ"
+
 #. Eden is the emulator's name (unchanged).
 #: pe/ui/browse.cpp
 msgid "Powered by Eden"
@@ -1399,6 +1456,10 @@ msgstr "Phòng công khai"
 #: pe/ui/multiplayer.cpp
 msgid "PUBLIC ROOMS"
 msgstr "PHÒNG CÔNG KHAI"
+
+#: pe/ui/settings.cpp
+msgid "Put images in the wallpapers folder to show them here."
+msgstr "Đặt hình ảnh vào thư mục wallpapers để hiện ở đây."
 
 #: pe/ui/remote.cpp
 msgid "Queued"
@@ -1582,6 +1643,10 @@ msgstr "Lưu lúc {0}. Dữ liệu sẽ thay cho của máy này."
 msgid "Saved. A display that cannot show 120 Hz stays at 60 Hz."
 msgstr "Đã lưu. Màn hình không hỗ trợ 120 Hz sẽ giữ ở 60 Hz."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Applies the next time ProsperoEden opens."
+msgstr "Đã lưu. Có hiệu lực từ lần mở ProsperoEden tiếp theo."
+
 #: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Saved. Applies when a game starts."
 msgstr "Đã lưu. Áp dụng khi mở trò chơi."
@@ -1591,9 +1656,18 @@ msgstr "Đã lưu. Áp dụng khi mở trò chơi."
 msgid "Saved. Full quality uses four times the graphics memory for these textures and can run out above 1x."
 msgstr "Đã lưu. Chất lượng đầy đủ dùng gấp bốn lần bộ nhớ đồ họa cho các texture này và có thể hết bộ nhớ khi trên 1x."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Post-processing needs the Vulkan renderer."
+msgstr "Đã lưu. Hậu kỳ cần trình kết xuất Vulkan."
+
 #: pe/ui/browse.cpp
 msgid "Saved. Reopen ProsperoEden to use this folder."
 msgstr "Đã lưu. Hãy mở lại ProsperoEden để dùng thư mục này."
+
+#. About the Update notices switch; homebrew.page is a site's name and stays as it is; About is the menu's last section (use its translation).
+#: pe/ui/settings.cpp
+msgid "Says when homebrew.page has a newer version. Off, only About names it."
+msgstr "Báo khi homebrew.page có phiên bản mới hơn. Khi tắt, chỉ mục Giới thiệu nhắc đến."
 
 #: pe/ui/pairing.cpp
 msgid "Scan the code with your phone, or open the address below."
@@ -1665,6 +1739,10 @@ msgid "Several sources have this game. Which one should it come from?"
 msgstr "Nhiều nguồn có trò chơi này. Nên lấy từ nguồn nào?"
 
 #: pe/ui/settings.cpp
+msgid "Show an image of your own behind the menu."
+msgstr "Hiện hình ảnh của riêng bạn phía sau menu."
+
+#: pe/ui/settings.cpp
 msgid "Show or hide the FPS overlay"
 msgstr "Hiện hoặc ẩn bộ đếm FPS"
 
@@ -1709,6 +1787,11 @@ msgstr "Tiếng Tây Ban Nha (Mỹ Latinh)"
 #: pe/ui/settings.cpp
 msgid "Speed"
 msgstr "Tốc độ"
+
+#. Settings > Performance: how fast a game may run, as a percentage of the console it was made for.
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Speed limit"
+msgstr "Giới hạn tốc độ"
 
 #. A DualSense button.
 #: pe/ui/game_options.cpp
@@ -1875,6 +1958,10 @@ msgstr "Không thể hoàn tất cập nhật"
 msgid "Theme"
 msgstr "Giao diện"
 
+#: pe/ui/settings.cpp
+msgid "Theme and launcher settings."
+msgstr "Cài đặt chủ đề và trình khởi chạy."
+
 #: pe/ui/save_sync.cpp
 msgid "This console and the server both have save data the other does not know. Which one should stay? The other is kept as a backup."
 msgstr "Máy này và máy chủ đều có dữ liệu lưu mà bên kia không biết. Nên giữ bên nào? Bên còn lại được giữ làm bản sao lưu."
@@ -1957,6 +2044,11 @@ msgstr "Không khả dụng"
 msgid "Understood"
 msgstr "Đã hiểu"
 
+#. A Speed limit choice: no limit at all (as fast as the console can).
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Unlimited"
+msgstr "Không giới hạn"
+
 #: pe/ui/pairing.cpp
 msgid "Unlink"
 msgstr "Hủy liên kết"
@@ -1979,6 +2071,11 @@ msgstr "LÊN"
 #: pe/ui/launcher.cpp, pe/ui/update.cpp
 msgid "Update available"
 msgstr "Có bản cập nhật"
+
+#. Settings switch: whether the app says at its start that a newer release of this app is listed (not game updates).
+#: pe/ui/settings.cpp
+msgid "Update notices"
+msgstr "Thông báo cập nhật"
 
 #. Button: download and install the newer release of this app now.
 #: pe/ui/update.cpp
@@ -2006,6 +2103,10 @@ msgstr "Bộ lọc phóng to"
 msgid "USA"
 msgstr "Mỹ"
 
+#: pe/ui/settings.cpp
+msgid "Use another home screen, library and menu layout."
+msgstr "Dùng bố cục khác cho màn hình chính, thư viện và menu."
+
 #: pe/ui/browse.cpp
 msgid "Use extracted firmware NCA files. Choose the folder in Settings, Game files; restart the app after changing it."
 msgstr "Hãy dùng các tệp NCA firmware đã trích xuất. Chọn thư mục trong Cài đặt, Tệp trò chơi; khởi động lại ứng dụng sau khi thay đổi."
@@ -2020,7 +2121,7 @@ msgid "Version {0}"
 msgstr "Phiên bản {0}"
 
 #. {0}: the newer release's number, for example 1.000.050; homebrew.page is a site's name and stays as it is.
-#: pe/ui/launcher.cpp
+#: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Version {0} is on homebrew.page"
 msgstr "Phiên bản {0} có trên homebrew.page"
 
@@ -2073,6 +2174,10 @@ msgstr "Đang chờ {0}"
 #: pe/ui/remote.cpp
 msgid "Waiting to download"
 msgstr "Đang chờ tải xuống"
+
+#: pe/ui/settings.cpp
+msgid "Wallpaper"
+msgstr "Hình nền"
 
 #: pe/ui/settings.cpp
 msgid "What the FPS overlay's line says, and how the chip is drawn."

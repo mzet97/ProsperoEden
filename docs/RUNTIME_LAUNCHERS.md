@@ -77,6 +77,16 @@ launcher picker follows the native menu bindings, including its Select and Back 
 `preferences.set` accepts a `menu_bind` array containing each of those four integers
 exactly once. Partial preference patches retain the current menu bindings.
 
+`status.update` holds the newer application release the start-up check found, whatever
+the user chose. `preferences.update_notices` is **Settings > Diagnostics > Update
+notices** (true by default): when it is false, a pack should not offer the release when
+it opens, only name it where it shows the running version. The built-in launcher that a
+pack falls back to follows it.
+
+`choices.speed_limit` lists the speed-limit steps as percentages, `0` meaning no limit.
+`preferences.speed_limit` and a game setting's `speed_limit` are indexes into that list;
+the game setting is `-1` while the game follows Settings.
+
 Three functions cross the host boundary:
 
 ```lua
@@ -96,7 +106,7 @@ can fail. Services and serialized fields are defined in
 | `library`, `home`, `profiles` | Library snapshots, recents, setup status and current profile |
 | `preferences`, `choices`, `game_settings` | Global and per-game settings and supported choices |
 | `status` | Clock, real controller mask, multiplayer phase, launch/sync/update/keyboard state |
-| `game_files`, `mods`, `setup` | Folder information, mods/cheats and setup details |
+| `game_files`, `mods`, `cheats`, `setup` | Folder information, a game's mods (each with `cheats_only` when it holds cheats alone), its cheats with the Cheats switch, and setup details |
 | `sources`, `downloads` | Remote-source catalog and native download queue |
 | `save_sync`, `save_sync_setup`, `pair_servers`, `pairing` | Native save synchronization and pairing |
 | `room_form`, `public_rooms` | Room form without a saved password, cached public directory |
@@ -109,7 +119,7 @@ can fail. Services and serialized fields are defined in
 | `profile.choose` (`handle` or `index`), `profile.add`, `profile.rename` (`index`, `step`), `profile.remove` (`index`) | Native profiles |
 | `preferences.set` (field patch), `game_settings.set` (`game`, `patch`), `game.docked` (`game`, `value`) | Existing settings storage |
 | `game_files.set` (`path`) | Existing game-files folder selection |
-| `mods.enabled`, `mod.enabled`, `cheat.enabled`, `mods.folder` | Native mod and cheat operations, using a library `game` handle |
+| `mods.enabled`, `mod.enabled`, `cheats.enabled`, `cheat.enabled` (`mod`, `name`), `mods.folder` | Native mod and cheat operations, using a library `game` handle |
 | `save.import`, `save.export` (`game`) | Native save transfer |
 | `sources.refresh`, `download.start` (`game`, `source`, `first`), `download.cancel` (`key`), `game.delete` (`game`, `confirmed`) | Native remote and file operations |
 | `room.refresh`, `room.leave`, `room.join` (connection fields), `room.join_public` (`index`, `nickname`, `password`) | Existing multiplayer services |
@@ -177,8 +187,9 @@ compatible app update replaces engine files without replacing them.
 
 This does **not** make an unmodified official release support runtime packs. Automatic
 updates preserve a selected pack only when the destination release includes this
-runtime and declares its compatible contract. Pack updates themselves are manual in
-this first implementation. Maintainers must preserve an existing contract or introduce
+runtime and declares its compatible contract, API and capabilities. Optional
+[launcher pack updates](LAUNCHER_UPDATES.md) provide separate HTTPS feeds, automatic
+checks and confirmed installation without replacing the application. Maintainers must preserve an existing contract or introduce
 a new contract with a migration; adding unrelated engine features does not require
 recompiling packs.
 
@@ -203,10 +214,11 @@ frontend lifecycle and updater, adapt the bridge, and run the renderer and workf
 checks. Existing packs can remain unchanged when `launcher-v1.0` keeps its behavior.
 New host settings do not automatically appear in old packs. Breaking changes need a new
 contract or an adapter, rather than declaring an incompatible implementation compatible.
-Pack updates are manual; the application updater does not download launcher updates.
+The application updater does not download launcher updates; the separate native pack
+updater handles packs that opt into the [update-feed format](LAUNCHER_UPDATES.md).
 
 The host build needs a C++20 compiler, EGL/OpenGL development libraries and
-nlohmann/json development headers (3.11 or newer). The existing dependency tool fetches
+nlohmann/json development headers (3.11 or newer), OpenSSL and libcurl development files. The existing dependency tool fetches
 the pinned HarfBuzz and UI kit; Lua is vendored in the source tree.
 
 `tools/launcher/runtime-preview.sh <output-dir> <width> <height>` builds an interactive

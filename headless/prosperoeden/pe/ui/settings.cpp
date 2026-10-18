@@ -5,6 +5,7 @@
 #include "pe/ui/launcher.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -68,8 +69,10 @@ enum VideoRow : int
     video_refresh,
     video_overlay,         // the FPS overlay's own switch
     video_overlay_options, // opens the overlay's options (Modal::hud)
+    video_post_processing, // one of Eden's ReShade FX presets, or off (Vulkan only)
     // Frame generation: not shown in a build without it (Services::frame_gen_state).
     video_frame_gen,
+    video_frame_gen_method,
     video_frame_gen_target,
     video_frame_gen_multiplier,
     kVideoRows,
@@ -94,6 +97,7 @@ enum HudRow : int
     hud_resolution_row, // the game's own picture, as it renders it (bit 9; last, so no earlier bit moves)
     kHudRows,
 };
+constexpr int kFrameGenMethods = 2;     // Lossless Scaling, MihawkGen (settings_store.h)
 constexpr int kFrameGenTargets = 6;     // Auto, 60, 90, 120, 144, 240 Hz (settings_store.h)
 constexpr int kFrameGenMultipliers = 3; // 2x, 3x, 4x
 constexpr int kHudSizes = 3;            // Regular, Medium, Large (settings_store.h, kHudSizeKeys)
@@ -120,10 +124,11 @@ enum PerformanceRow : int
     speed_reactive_flushing,
     speed_skip_invalidation,
     speed_compact_memory,
-    speed_memory_layout, // the memory a game's console is told it has; last, so no row moves
+    speed_limit_row,     // how fast a game may run: the row a game's own settings have after the switches
+    speed_memory_layout, // the memory a game's console is told it has; last
     kPerformanceRows,
 };
-constexpr int kPerformanceSwitches = speed_memory_layout;
+constexpr int kPerformanceSwitches = speed_limit_row;
 constexpr int kPerformanceRowsShown = 4;
 constexpr Rect kPerformanceWindow{592.0f, kVideoRowsTop, 736.0f,
                                   kVideoRowPitch * (kPerformanceRowsShown - 1) + kVideoRowHeight};
@@ -153,7 +158,9 @@ constexpr const char *kOutputs[] = {"1080p", "1440p", "2160p"};
 // Settings > Performance > Memory: what the guest's kernel is told the console has
 // (settings_store.h's kMemoryLayoutKeys). A size and its unit, so nothing here to translate.
 constexpr const char *kMemoryLayouts[] = {"4 GiB", "6 GiB", "8 GiB"};
+constexpr int kSpeedLimits = static_cast<int>(std::size(kSpeedLimitPercents));
 
+constexpr const char *kFrameGenMethodNames[] = {"Lossless Scaling", "MihawkGen"};
 constexpr const char *kFrameGenTargetNames[] = {"", "60", "90", "120", "144", "240"};
 constexpr const char *kFrameGenMultiplierNames[] = {"2x", "3x", "4x"};
 
@@ -173,10 +180,51 @@ std::string pick(const std::vector<std::string> &values, int index)
                values[static_cast<std::size_t>(index)] : std::string{"-"};
 }
 
+// Settings > Performance > Speed limit as the menu writes it: a percentage, or Unlimited.
+std::string speed_limit_name(int index)
+{
+    const int value = kSpeedLimitPercents[std::clamp(index, 0, kSpeedLimits - 1)];
+    return value > 0 ? percent(value) : std::string{tr("Unlimited")};
+}
+
 // A path that fits a label: the end is what tells folders apart.
 std::string short_path(const std::string &path, std::size_t limit)
 {
     return path.size() <= limit ? path : "..." + path.substr(path.size() - (limit - 3));
+}
+
+// The Wallpaper dialog's rows: "None" and the folder's images, which scroll with the folder's
+// name under them (docs/WALLPAPERS.md).
+constexpr int kWallpaperRowsShown = 4;
+constexpr Rect kWallpaperWindow{592.0f, kVideoRowsTop, 736.0f,
+                                kVideoRowPitch * (kWallpaperRowsShown - 1) + kVideoRowHeight};
+
+// A file the Wallpaper dialog lists: an image pe/gfx/image.cpp reads, with a name
+// settings_store.h's ValidWallpaperName would save.
+bool WallpaperImage(const std::string &name)
+{
+    const std::size_t dot = name.find_last_of('.');
+    if (dot == std::string::npos || dot == 0 || dot + 1 == name.size() || name.size() > 128)
+        return false;
+    for (unsigned char c : name)
+        if (c < 32 || c == 127 || c == '/' || c == '\\')
+            return false;
+    std::string extension = name.substr(dot);
+    for (char &c : extension)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp" ||
+           extension == ".gif" || extension == ".tga" || extension == ".dds";
+}
+
+// The row what is in use sits on: "None" (0) or the folder's image (1+).
+int WallpaperRow(const std::string &chosen, const std::vector<std::string> &files)
+{
+    if (chosen.empty())
+        return 0;
+    for (std::size_t index = 0; index < files.size(); ++index)
+        if (files[index] == chosen)
+            return 1 + static_cast<int>(index);
+    return 0;
 }
 
 } // namespace
@@ -482,6 +530,11 @@ const char *Launcher::performance_about(int row)
            "can be stale."),
         TR("Gives back memory a game left empty, 16 KiB at a time. More free memory; a game that "
            "writes there again can stutter for a moment.")};
+    // The speed limit is the row after the switches here and in a game's own settings
+    // (game_options.cpp), so the same line describes it in both.
+    if (row == speed_limit_row)
+        return TR("Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its "
+                  "frames plays faster too.");
     // The memory row has no line of its own: every language would need one, and its value says
     // what it is (a size of memory) while the message after it changes says when it arrives.
     if (row >= kPerformanceSwitches)
@@ -496,7 +549,8 @@ int Launcher::dialog_rows(Modal modal) const
     switch (modal)
     {
     case Modal::video:
-        return services_.frame_gen_state() == 0 ? static_cast<int>(video_frame_gen) : static_cast<int>(kVideoRows);
+        return (services_.frame_gen_state() == 0 && services_.mihawkgen_state() == 0)
+            ? static_cast<int>(video_frame_gen) : static_cast<int>(kVideoRows);
     case Modal::hud:
         return kHudRows;
     case Modal::performance:
@@ -505,23 +559,25 @@ int Launcher::dialog_rows(Modal modal) const
     case Modal::accessibility:
         return 3;
     case Modal::appearance:
-        return 2;
+        return 3; // theme, launcher and wallpaper
+    case Modal::wallpaper:
+        return 1 + static_cast<int>(wallpaper_files_.size()); // "None" and the images
     case Modal::theme:
         return static_cast<int>(themes().size());
     case Modal::accent:
         return static_cast<int>(accent_presets().size()) + 1;
     case Modal::game:
-        // Console mode, video, performance, audio, controls, system, language, mods; save data in
-        // builds that move saves.
+        // Console mode, video, performance, audio, controls, system, language, mods, cheats; save
+        // data in builds that move saves.
         // A game a download source has can be deleted from the console (and downloaded again).
-        return (services_.save_transfer_available() ? 9 : 8) +
+        return (services_.save_transfer_available() ? 10 : 9) +
                (library_.selected < static_cast<int>(games_.size()) &&
                         !games_[static_cast<std::size_t>(library_.selected)].sources.empty() &&
                         !games_[static_cast<std::size_t>(library_.selected)].remote ? 1 : 0);
     case Modal::controls:     // vibration, its strength, the button mapping, the menu's own buttons
         return kControlRows;
-    case Modal::diagnostics:  // detailed logging, logs written at once
-        return 2;
+    case Modal::diagnostics:  // detailed logging, logs written at once, update notices
+        return 3;
     default:
         return 1;
     }
@@ -542,12 +598,14 @@ float Launcher::dialog_row_top(Modal modal, int row) const
         return kVideoRowsTop + kVideoRowPitch * static_cast<float>(row) - performance_rows_.scroll();
     case Modal::video: // five of its rows show; the list scrolls to the others
         return kVideoRowsTop + kVideoRowPitch * static_cast<float>(row) - video_rows_.scroll();
+    case Modal::wallpaper: // four of its rows show; the list scrolls to the others
+        return kVideoRowsTop + kVideoRowPitch * static_cast<float>(row) - wallpaper_rows_.scroll();
     case Modal::game:
         return 334.0f + 96.0f * static_cast<float>(row);
     case Modal::controls: // under the shortcuts; the list scrolls
         return kControlsRowsTop + kVideoRowPitch * static_cast<float>(row) - controls_rows_.scroll();
-    case Modal::diagnostics: // under the setup's state
-        return 500.0f + 102.0f * static_cast<float>(row);
+    case Modal::diagnostics: // under the setup's state, spaced as Video's rows so three fit
+        return 470.0f + kVideoRowPitch * static_cast<float>(row);
     default:
         return 670.0f;
     }
@@ -561,10 +619,12 @@ void Launcher::press_dialog(Key key)
     const int step = key == Key::left ? -1 : 1;
     if (key == Key::circle)
     {
-        if (modal_ == Modal::theme)
+        if (modal_ == Modal::theme || modal_ == Modal::wallpaper)
         {
+            // Back to Appearance, on the row that opened these options.
+            const bool from_wallpaper = modal_ == Modal::wallpaper;
             modal_ = modal_shown_ = Modal::appearance;
-            option_ = 0;
+            option_ = from_wallpaper ? 2 : 0;
             option_cursor_.snap(dialog_row_top(Modal::appearance, option_));
             message_.clear();
             cue(Cue::back);
@@ -575,12 +635,13 @@ void Launcher::press_dialog(Key key)
     }
     if ((key == Key::up || key == Key::down) &&
         (modal_ == Modal::video || modal_ == Modal::performance || modal_ == Modal::controls ||
-         modal_ == Modal::accent))
+         modal_ == Modal::accent || modal_ == Modal::wallpaper))
     {
-        ListView &rows_view = modal_ == Modal::video      ? video_rows_
-                              : modal_ == Modal::controls ? controls_rows_
-                              : modal_ == Modal::accent  ? accent_rows_
-                                                          : performance_rows_;
+        ListView &rows_view = modal_ == Modal::video       ? video_rows_
+                              : modal_ == Modal::controls  ? controls_rows_
+                              : modal_ == Modal::accent    ? accent_rows_
+                              : modal_ == Modal::wallpaper ? wallpaper_rows_
+                                                           : performance_rows_;
         if (rows_view.move(key == Key::down ? 1 : -1))
         {
             option_ = rows_view.selected;
@@ -608,10 +669,28 @@ void Launcher::press_dialog(Key key)
             option_ = theme_index();
             option_cursor_.snap(dialog_row_top(Modal::theme, option_));
         }
-        else
+        else if (option_ == 1)
         {
             launcher_picker_ = true;
             cue(Cue::open);
+        }
+        else
+        {
+            // The wallpaper's own dialog (docs/WALLPAPERS.md): the folder's images, each on its
+            // own row, with "None" above them.
+            std::vector<std::string> files = services_.wallpapers();
+            std::vector<std::string> images;
+            for (std::string &name : files)
+                if (WallpaperImage(name))
+                    images.push_back(std::move(name));
+            wallpaper_files_ = std::move(images);
+            open_modal(Modal::wallpaper);
+            wallpaper_rows_.visible = kWallpaperRowsShown;
+            wallpaper_rows_.pitch = kVideoRowPitch;
+            const int row = WallpaperRow(prefs_.wallpaper, wallpaper_files_);
+            wallpaper_rows_.reset(dialog_rows(Modal::wallpaper), row);
+            option_ = row;
+            option_cursor_.snap(dialog_row_top(Modal::wallpaper, option_));
         }
         return;
     }
@@ -688,6 +767,13 @@ void Launcher::press_dialog(Key key)
             prefs_.astc = prefs_.astc != 0 ? 0 : 1;
         else if (option_ == video_refresh)
             prefs_.refresh = prefs_.refresh != 0 ? 0 : 1;
+        else if (option_ == video_post_processing)
+        {
+            // The shared presets only: a game's own are in its settings (Services::post_processing_shared).
+            const int count = std::clamp(services_.post_processing_shared(), 1,
+                                         static_cast<int>(services_.post_processing_labels().size()));
+            prefs_.post_processing = (std::clamp(prefs_.post_processing, 0, count - 1) + step + count) % count;
+        }
         else if (option_ == video_overlay_options)
         {
             // The overlay's options have their own list (settings.cpp, Modal::hud).
@@ -695,9 +781,26 @@ void Launcher::press_dialog(Key key)
                 open_hud();
             return;
         }
-        else if (option_ >= video_frame_gen && services_.frame_gen_state() != 2)
+        else if (option_ == video_frame_gen_method) {
+            auto method_available = [&](int m) {
+                return m == 0 ? services_.frame_gen_state() == 2
+                              : services_.mihawkgen_state() == 2;
+            };
+            int m = std::clamp(prefs_.frame_gen_method, 0, kFrameGenMethods - 1);
+            for (int i = 0; i < kFrameGenMethods; ++i) {
+                m = (m + step + kFrameGenMethods) % kFrameGenMethods;
+                if (method_available(m)) break;
+            }
+            prefs_.frame_gen_method = m;
+        }
+        else if (option_ >= video_frame_gen && option_ != video_frame_gen_method &&
+                 (prefs_.frame_gen_method == 0 ? services_.frame_gen_state() != 2
+                                               : services_.mihawkgen_state() != 2))
         {
-            say(tr("Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."), true);
+            if (prefs_.frame_gen_method == 0)
+                say(tr("Frame generation needs Lossless.dll, from Lossless Scaling, in the lossless folder."), true);
+            else
+                say(tr("Frame generation needs MihawkGen weights (network.fgw)."), true);
             cue(Cue::error);
             return;
         }
@@ -737,6 +840,13 @@ void Launcher::press_dialog(Key key)
             const int count = static_cast<int>(std::size(kMemoryLayouts));
             prefs_.memory_layout =
                 (std::clamp(prefs_.memory_layout, 0, count - 1) + step + count) % count;
+            break;
+        }
+        if (option_ == speed_limit_row)
+        {
+            // 100% to 300%, then Unlimited, and round to 100% again.
+            prefs_.speed_limit =
+                (std::clamp(prefs_.speed_limit, 0, kSpeedLimits - 1) + step + kSpeedLimits) % kSpeedLimits;
             break;
         }
         bool *const switches[kPerformanceSwitches] = {
@@ -788,14 +898,29 @@ void Launcher::press_dialog(Key key)
     case Modal::diagnostics:
         if (option_ == 0)
             prefs_.detailed_logging = !prefs_.detailed_logging;
-        else
+        else if (option_ == 1)
             prefs_.immediate_logs = !prefs_.immediate_logs;
+        else
+            prefs_.update_notices = !prefs_.update_notices;
+        break;
+    case Modal::wallpaper:
+        if (!activate)
+            return;
+        {
+            // "None" (row 0) shows the theme's own art again; a row below is that image. The
+            // picture changing is the confirmation, as the theme's look changing is.
+            const int chosen =
+                option_ >= 1 && option_ - 1 < static_cast<int>(wallpaper_files_.size()) ? option_ - 1 : -1;
+            prefs_.wallpaper =
+                chosen < 0 ? std::string{} : wallpaper_files_[static_cast<std::size_t>(chosen)];
+            sound = Cue::saved;
+        }
         break;
     default:
         return;
     }
     // The launcher's look changes on the spot: that is its own confirmation.
-    if (!save_preferences(modal_ == Modal::accessibility))
+    if (!save_preferences(modal_ == Modal::accessibility || modal_ == Modal::wallpaper))
     {
         prefs_ = before;
         sound = Cue::error;
@@ -805,16 +930,28 @@ void Launcher::press_dialog(Key key)
         // 120 Hz is a request: the display has the last word.
         say(tr("Saved. A display that cannot show 120 Hz stays at 60 Hz."));
     }
+    else if (modal_ == Modal::video && option_ == video_post_processing && prefs_.post_processing > 0)
+    {
+        // Eden's ReShade FX pass is drawn by the Vulkan renderer; OpenGL shows the game as it is.
+        say(prefs_.renderer != 0 ? tr("Saved. Applies when a game starts.")
+                                 : tr("Saved. Post-processing needs the Vulkan renderer."));
+    }
     else if (modal_ == Modal::video && option_ == video_astc && prefs_.astc == 1)
     {
         // Held decoded, these textures take four times the memory they take compressed.
         say(tr("Saved. Full quality uses four times the graphics memory for these textures and can run out "
                "above 1x."));
     }
-    else if (modal_ == Modal::performance && option_ == speed_memory_layout)
+    else if (modal_ == Modal::performance && (option_ == speed_memory_layout || option_ == speed_limit_row))
     {
-        // The guest's memory is taken as a game starts, so this says when the change arrives.
+        // The guest's memory is taken, and the speed set, as a game starts, so this says when the
+        // change arrives.
         say(tr("Saved. Applies when a game starts."));
+    }
+    else if (modal_ == Modal::diagnostics && option_ == 2)
+    {
+        // Update notices: the check and its answer come as the app opens.
+        say(tr("Saved. Applies the next time ProsperoEden opens."));
     }
     apply_look();
     cue(sound);
@@ -857,6 +994,10 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         title = tr("Appearance");
         copy = tr("Theme and launcher settings.");
         break;
+    case Modal::wallpaper:
+        title = tr("Wallpaper");
+        copy = tr("An image of your own behind this menu.");
+        break;
     case Modal::theme:
         title = tr("Theme");
         copy = tr("The look of this menu.");
@@ -868,7 +1009,8 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     default:
         title = tr("Diagnostics");
         copy = option_ == 0 ? tr("Detailed logs apply to the next game launch.") :
-                             tr("Keeps the last line before a crash, but games stutter. From the next start.");
+               option_ == 1 ? tr("Keeps the last line before a crash, but games stutter. From the next start.") :
+                              tr("Says when homebrew.page has a newer version. Off, only About names it.");
         break;
     }
     text_shrink(c, title, 592.0f, baseline(218.0f, 62.0f, th().size_display), th().size_display,
@@ -878,17 +1020,20 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
 
     const int rows = dialog_rows(modal);
     // Video's rows scroll in a window of five, Performance's in one of four, Controls' in one
-    // of three under its shortcuts and Colour's in one of six; the other dialogs show all of
-    // theirs.
+    // of three under its shortcuts, Colour's in one of six and Wallpaper's in one of four; the
+    // other dialogs show all of theirs.
     const bool scrolls = modal == Modal::video || modal == Modal::performance ||
-                         modal == Modal::controls || modal == Modal::accent;
+                         modal == Modal::controls || modal == Modal::accent ||
+                         modal == Modal::wallpaper;
     const ListView &rows_view = modal == Modal::performance    ? performance_rows_
                                 : modal == Modal::controls     ? controls_rows_
-                                : modal == Modal::accent      ? accent_rows_
+                                : modal == Modal::accent       ? accent_rows_
+                                : modal == Modal::wallpaper    ? wallpaper_rows_
                                                                : video_rows_;
     const Rect &window = modal == Modal::performance    ? kPerformanceWindow
                          : modal == Modal::controls     ? kControlsWindow
-                         : modal == Modal::accent      ? kAccentWindow
+                         : modal == Modal::accent       ? kAccentWindow
+                         : modal == Modal::wallpaper    ? kWallpaperWindow
                                                         : kVideoWindow;
     const float rows_top = modal == Modal::controls ? kControlsRowsTop : kVideoRowsTop;
     const int first = scrolls ? rows_view.first_row() : 0;
@@ -938,17 +1083,22 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
             hertz(prefs_.refresh),
             std::string{}, // FPS overlay: a switch
             std::string{}, // Overlay options: an opener
+            pick(services_.post_processing_labels(), prefs_.post_processing),
             on_off(prefs_.frame_gen),
+            std::string{kFrameGenMethodNames[std::clamp(prefs_.frame_gen_method, 0, kFrameGenMethods - 1)]},
             prefs_.frame_gen_target <= 0 ? std::string{tr("Auto")} :
                 fill(tr("{0} Hz"), {kFrameGenTargetNames[std::clamp(prefs_.frame_gen_target, 1, kFrameGenTargets - 1)]}),
             kFrameGenMultiplierNames[std::clamp(prefs_.frame_gen_multiplier, 0, kFrameGenMultipliers - 1)],
         };
-        const bool frame_gen_locked = services_.frame_gen_state() != 2;
+        const bool lsfg_locked = services_.frame_gen_state() != 2;
+        const bool mihawkgen_locked = services_.mihawkgen_state() != 2;
+        const bool frame_gen_locked = prefs_.frame_gen_method == 0 ? lsfg_locked :
+                                      prefs_.frame_gen_method == 1 ? mihawkgen_locked : true;
         static constexpr const char *kNames[kVideoRows] = {
             TR("Renderer"),         TR("Output resolution"), TR("Resolution"),
             TR("Upscaling filter"), TR("ASTC textures"),     TR("Refresh rate"),
-            TR("FPS overlay"),      TR("Overlay options"),
-            TR("Frame generation"), TR("Frame gen target"),  TR("Frame gen multiplier")};
+            TR("FPS overlay"),      TR("Overlay options"),   TR("Post-processing"),
+            TR("Frame generation"), TR("Frame gen method"),  TR("Frame gen target"),  TR("Frame gen multiplier")};
         for (int row = first; row <= last; ++row)
         {
             list.push_opacity(video_rows_.row_alpha(row, kVideoRowHeight));
@@ -965,9 +1115,9 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
                                                 th().size_small, th().meta, 320.0f, Align::right);
                 label(row, tr(kNames[row]), shown);
             }
-            else if (row >= video_frame_gen && frame_gen_locked)
+            else if (row >= video_frame_gen && row != video_frame_gen_method && frame_gen_locked)
             {
-                // Greyed out: the user's Lossless.dll is not there.
+                // Greyed out: the selected method's requirement is not met.
                 list.push_opacity(0.38f);
                 label(row, tr(kNames[row]), choice(row, tr("Unavailable")));
                 list.pop_opacity();
@@ -1070,10 +1220,17 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         static constexpr const char *kNames[kPerformanceRows] = {
             TR("Compile ahead"),        TR("Asynchronous shaders"), TR("Faster GPU emulation"),
             TR("Faster CPU emulation"), TR("Faster DMA"),           TR("Reactive flushing"),
-            TR("Skip CPU invalidation"), TR("Compact memory"), TR("Memory")};
+            TR("Skip CPU invalidation"), TR("Compact memory"), TR("Speed limit"), TR("Memory")};
         for (int row = first; row <= last; ++row)
         {
             list.push_opacity(rows_view.row_alpha(row, kVideoRowHeight));
+            if (row == speed_limit_row)
+            {
+                // Not a switch either: how fast the game may run, 100% being the console's own pace.
+                label(row, tr(kNames[row]), choice(row, speed_limit_name(prefs_.speed_limit)));
+                list.pop_opacity();
+                continue;
+            }
             if (row == speed_memory_layout)
             {
                 // Not a switch: the memory the game's console is told it has. 4 GiB is what a
@@ -1118,18 +1275,54 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     }
     case Modal::appearance:
     {
-        static constexpr const char *kNames[] = {TR("Theme"), TR("Launcher")};
+        static constexpr const char *kNames[] = {TR("Theme"), TR("Launcher"), TR("Wallpaper")};
+        const std::string wallpaper_name =
+            prefs_.wallpaper.empty() ? std::string{tr("None")} : prefs_.wallpaper;
         for (int row = 0; row < rows; ++row)
         {
-            const float shown = row == 0 ? text_shrink(c, th().name, 1292.0f,
-                                            baseline(dialog_row_top(modal, row), 94.0f, th().size_small),
-                                            th().size_small, th().meta, 320.0f, Align::right) : 0.0f;
+            const float shown =
+                row == 0 ? text_shrink(c, th().name, 1292.0f,
+                                       baseline(dialog_row_top(modal, row), 94.0f, th().size_small),
+                                       th().size_small, th().meta, 320.0f, Align::right) :
+                row == 2 ? text_shrink(c, wallpaper_name, 1292.0f,
+                                       baseline(dialog_row_top(modal, row), 94.0f, th().size_small),
+                                       th().size_small, th().meta, 320.0f, Align::right) :
+                           0.0f;
             label(row, tr(kNames[row]), shown);
         }
-        const char* about = option_ == 0 ? tr("Choose the colours and appearance of this menu.") :
-                                         tr("Use another home screen, library and menu layout.");
+        const char *about = option_ == 0    ? tr("Choose the colours and appearance of this menu.") :
+                            option_ == 1    ? tr("Use another home screen, library and menu layout.") :
+                                              tr("Show an image of your own behind the menu.");
         text_block(c, about, 592.0f, baseline(700.0f, 30.0f, th().size_small), th().size_small,
                    30.0f, th().meta, 736.0f, 2, kShrink);
+        break;
+    }
+    case Modal::wallpaper:
+    {
+        // "None" and every image the folder holds: what is in use carries the mark (as the
+        // theme and colour dialogs mark theirs).
+        const int current = WallpaperRow(prefs_.wallpaper, wallpaper_files_);
+        const auto row_name = [&](int row) -> const char *
+        {
+            if (row == 0)
+                return tr("None");
+            const std::size_t index = static_cast<std::size_t>(row - 1);
+            return index < wallpaper_files_.size() ? wallpaper_files_[index].c_str() : "";
+        };
+        for (int row = first; row <= last; ++row)
+        {
+            list.push_opacity(rows_view.row_alpha(row, kVideoRowHeight));
+            label(row, row_name(row), 64.0f);
+            if (row == current)
+            {
+                list.circle(1268.0f, row_centre(row), 17.0f, th().accent);
+                const bool contrast = look().high_contrast;
+                look().high_contrast = false;
+                icon(c, Icon::check, 1268.0f, row_centre(row), 22.0f, th().on_accent);
+                look().high_contrast = contrast;
+            }
+            list.pop_opacity();
+        }
         break;
     }
     case Modal::theme:
@@ -1176,13 +1369,15 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
     }
     default:
     {
-        text_block(c, services_.setup_details(), 592.0f, baseline(364.0f, 40.0f, th().size_text),
-                   th().size_text, 40.0f, th().body, 736.0f, 3, kShrink);
-        static constexpr const char *kNames[] = {TR("Detailed logging"), TR("Write logs at once")};
+        text_block(c, services_.setup_details(), 592.0f, baseline(350.0f, 38.0f, th().size_text),
+                   th().size_text, 38.0f, th().body, 736.0f, 3, kShrink);
+        static constexpr const char *kNames[] = {TR("Detailed logging"), TR("Write logs at once"),
+                                                 TR("Update notices")};
         static constexpr const char *kAbout[] = {
             TR("Eden's debug messages in the logs of a game."),
-            TR("Keeps the last line before a crash, but games stutter. From the next start.")};
-        for (int row = 0; row < 2; ++row)
+            TR("Keeps the last line before a crash, but games stutter. From the next start."),
+            TR("Says when homebrew.page has a newer version. Off, only About names it.")};
+        for (int row = 0; row < 3; ++row)
         {
             label(row, tr(kNames[row]), kToggle);
             toggle(c, 1292.0f, row_centre(row),
@@ -1190,9 +1385,9 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         }
         // The folder stays available after the startup notice is gone.
         const std::string reports = services_.crash_reports_folder();
-        text_block(c, reports.empty() ? std::string{tr(kAbout[std::clamp(option_, 0, 1)])} :
+        text_block(c, reports.empty() ? std::string{tr(kAbout[std::clamp(option_, 0, 2)])} :
                        fill(tr("Crash reports (FTP): {0}\nAttach crash-*.txt and its matching logs to your issue."), {reports}),
-                   592.0f, baseline(716.0f, 26.0f, th().size_small),
+                   592.0f, baseline(772.0f, 26.0f, th().size_small),
                    th().size_small, 26.0f, th().body, 736.0f, 3, kShrink);
         break;
     }
@@ -1203,17 +1398,28 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
         list.pop_clip();
         scrollbar(c, rows_view, 1340.0f, window.y, window.h);
     }
-    if (modal == Modal::performance && option_ < kPerformanceSwitches)
+    if (modal == Modal::performance && *performance_about(option_))
     {
-        // What the highlighted switch does, under the window.
+        // What the highlighted switch (or the speed limit) does, under the window.
         text_block(c, tr(performance_about(option_)), 592.0f,
                    baseline(window.y + window.h + 22.0f, 30.0f, th().size_small), th().size_small, 30.0f,
                    th().meta, 736.0f, 2, kShrink);
     }
+    if (modal == Modal::wallpaper)
+    {
+        // The folder the images are put in (as Performance says what its switches do).
+        const std::string folder = services_.wallpapers_folder();
+        text_block(c, folder.empty() ?
+                          std::string{tr("Put images in the wallpapers folder to show them here.")} :
+                          fill(tr("Images in this folder: {0}"), {short_path(folder, 64)}),
+                   592.0f, baseline(window.y + window.h + 22.0f, 30.0f, th().size_small), th().size_small,
+                   30.0f, th().meta, 736.0f, 2, kShrink);
+    }
 
-    // Under the rows: Video's five, Performance's four with their line of text, and Controls'
-    // that scroll under its shortcuts all end lower than the other dialogs' rows.
-    const float foot = scrolls ? 848.0f : 811.0f;
+    // Under the rows: Video's five, Performance's four with their line of text, Controls' that
+    // scroll under its shortcuts and Diagnostics' three over the crash reports' folder all end
+    // lower than the other dialogs' rows.
+    const float foot = scrolls || modal == Modal::diagnostics ? 848.0f : 811.0f;
     if (!message_.empty() && scrolls)
     {
         // Two lines, placed as a game's own settings place theirs: what a Video choice costs
@@ -1244,7 +1450,7 @@ void Launcher::draw_dialog(Canvas &c, Modal modal, float open)
             {Pad::updown, TR("Select")}, {Pad::cross, TR("Open")}, {Pad::circle, TR("Back")}};
         draw_hints(c, kOpen, 3, 592.0f, foot, th().copy, 736.0f);
     }
-    else if (modal == Modal::theme)
+    else if (modal == Modal::theme || modal == Modal::wallpaper)
     {
         static constexpr Hint kApply[] = {
             {Pad::updown, TR("Select")}, {Pad::cross, TR("Apply")}, {Pad::circle, TR("Back")}};

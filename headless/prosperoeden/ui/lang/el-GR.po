@@ -66,6 +66,10 @@ msgstr "Απομένουν περίπου {0} λ"
 msgid "About {0} s left"
 msgstr "Απομένουν περίπου {0} δ"
 
+#: pe/ui/settings.cpp
+msgid "Above 100%, a game locked to 30 FPS can reach 60, and a game that counts its frames plays faster too."
+msgstr "Πάνω από 100%, ένα παιχνίδι κλειδωμένο στα 30 FPS μπορεί να φτάσει τα 60, και ένα παιχνίδι που μετράει τα καρέ του παίζει επίσης πιο γρήγορα."
+
 #. Label: which folders the app can read.
 #: pe/ui/browse.cpp
 msgid "ACCESS"
@@ -88,6 +92,10 @@ msgstr "Προστέθηκε στις λήψεις. Η ουρά φαίνεται
 msgid "Added. Cross plays as this profile; left and right change its name."
 msgstr "Προστέθηκε. Σταυρός για παιχνίδι με αυτό το προφίλ· αριστερά και δεξιά αλλάζουν το όνομα."
 
+#: pe/ui/library.cpp
+msgid "All cheats"
+msgstr "Όλα τα cheats"
+
 #: pe/ui/browse.cpp
 msgid "All credit for the Eden emulator goes to its developers and contributors."
 msgstr "Όλα τα εύσημα για τον εξομοιωτή Eden ανήκουν στους προγραμματιστές και τους συνεισφέροντές του."
@@ -96,9 +104,21 @@ msgstr "Όλα τα εύσημα για τον εξομοιωτή Eden ανήκ�
 msgid "AMD FSR"
 msgstr "AMD FSR"
 
+#: pe/ui/settings.cpp
+msgid "An image of your own behind this menu."
+msgstr "Μια δική σας εικόνα πίσω από αυτό το μενού."
+
 #: eden_services.cpp
 msgid "Another language"
 msgstr "Άλλη γλώσσα"
+
+#: pe/ui/settings.cpp
+msgid "Appearance"
+msgstr "Εμφάνιση"
+
+#: pe/ui/settings.cpp
+msgid "Apply"
+msgstr "Εφαρμογή"
 
 #. The button mapping has not been changed.
 #: pe/ui/game_options.cpp, pe/ui/settings.cpp
@@ -215,9 +235,14 @@ msgid "Changed"
 msgstr "Αλλαγμένη"
 
 #. What a mod is made of: cheat codes.
-#: eden_services.cpp, host/fake_services.cpp
+#: eden_services.cpp, host/fake_services.cpp, pe/ui/library.cpp
 msgid "Cheats"
 msgstr "Cheats"
+
+#. Shown under a cheat that came from the game's cheats folder (not from a mod).
+#: pe/ui/library.cpp
+msgid "Cheats folder"
+msgstr "Φάκελος cheats"
 
 #: pe/ui/pairing.cpp
 msgid "Check that the code there is this one, and approve."
@@ -251,6 +276,14 @@ msgstr "Επιλογή"
 #: pe/ui/home.cpp
 msgid "Choose a game from your library."
 msgstr "Επιλέξτε ένα παιχνίδι από τη βιβλιοθήκη σας."
+
+#: pe/ui/settings.cpp
+msgid "Choose a theme or change the launcher layout."
+msgstr "Επιλέξτε θέμα ή αλλάξτε τη διάταξη της εκκίνησης."
+
+#: pe/ui/settings.cpp
+msgid "Choose the colours and appearance of this menu."
+msgstr "Επιλέξτε τα χρώματα και την εμφάνιση αυτού του μενού."
 
 #: pe/ui/browse.cpp
 msgid "Choose the folder that holds your keys, firmware and games"
@@ -705,6 +738,10 @@ msgstr "Πλήρης ποιότητα"
 msgid "Game audio; PS5 system-menu music is unchanged."
 msgstr "Ήχος παιχνιδιού. Η μουσική του μενού συστήματος του PS5 δεν αλλάζει."
 
+#: pe/ui/launcher.cpp
+msgid "Game cannot start now."
+msgstr "Το παιχνίδι δεν μπορεί να ξεκινήσει τώρα."
+
 #. {0} is the reason, a sentence in English; {1} is a file.
 #: eden_services.cpp, host/fake_services.cpp
 msgid "Game could not start: {0} Details: {1}"
@@ -792,6 +829,10 @@ msgstr "Αρχική"
 #: pe/ui/library.cpp, pe/ui/settings.cpp
 msgid "How games are drawn and scaled to your TV."
 msgstr "Πώς σχεδιάζονται και κλιμακώνονται τα παιχνίδια στην τηλεόρασή σας."
+
+#: pe/ui/settings.cpp
+msgid "Images in this folder: {0}"
+msgstr "Εικόνες σε αυτόν τον φάκελο: {0}"
 
 #. Button hint: copy a save in.
 #: pe/ui/library.cpp
@@ -914,6 +955,10 @@ msgstr "Μεγαλύτερο κείμενο"
 #: eden_services.cpp
 msgid "Last game opened"
 msgstr "Τελευταίο παιχνίδι"
+
+#: pe/ui/settings.cpp
+msgid "Launcher"
+msgstr "Εκκίνηση"
 
 #: pe/ui/multiplayer.cpp
 msgid "Leave / cancel"
@@ -1061,6 +1106,15 @@ msgstr "Ψευδώνυμο"
 msgid "Nickname: {0}"
 msgstr "Ψευδώνυμο: {0}"
 
+#: pe/ui/library.cpp
+msgid "No cheats"
+msgstr "Κανένα cheat"
+
+#. <build ID>.txt stays as it is: a cheat file is named after the game version's build ID. {0} is a folder such as roms/Game/cheats/.
+#: pe/ui/library.cpp
+msgid "No cheats for this game yet. Copy its cheat files (<build ID>.txt) to {0}."
+msgstr "Δεν υπάρχουν ακόμη cheats για αυτό το παιχνίδι. Αντιγράψτε τα αρχεία cheats του (<build ID>.txt) στο {0}."
+
 #: pe/ui/remote.cpp
 msgid "No download source is set up. Save a file named {0} that lists your sources, as this one does with a RomM server, then open this menu again. Downloads need an FTP server running on the console, on port {1}."
 msgstr "Δεν έχει ρυθμιστεί πηγή λήψης. Αποθήκευσε ένα αρχείο με όνομα {0} που απαριθμεί τις πηγές σου, όπως κάνει αυτό με έναν διακομιστή RomM, και άνοιξε ξανά αυτό το μενού. Οι λήψεις χρειάζονται διακομιστή FTP που εκτελείται στην κονσόλα, στη θύρα {1}."
@@ -1086,10 +1140,9 @@ msgstr "Δεν υπάρχουν φάκελοι εδώ."
 msgid "No mods"
 msgstr "Κανένα mod"
 
-#. {0} is a folder; roms/ is a folder name (unchanged).
 #: pe/ui/library.cpp
-msgid "No mods for this game yet. Copy each mod's folder to {0}, next to roms/."
-msgstr "Δεν υπάρχουν ακόμη mods για αυτό το παιχνίδι. Αντιγράψτε τον φάκελο κάθε mod στο {0}, δίπλα στο roms/."
+msgid "No mods for this game yet. Copy each mod's folder to {0}."
+msgstr "Δεν υπάρχουν ακόμη mods για αυτό το παιχνίδι. Αντιγράψτε τον φάκελο κάθε mod στο {0}."
 
 #: pe/ui/multiplayer.cpp
 msgid "No public rooms are available."
@@ -1303,6 +1356,10 @@ msgstr "Πορτογαλικά"
 msgid "Portuguese (Brazil)"
 msgstr "Πορτογαλικά (Βραζιλία)"
 
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Post-processing"
+msgstr "Μεταεπεξεργασία"
+
 #. Eden is the emulator's name (unchanged).
 #: pe/ui/browse.cpp
 msgid "Powered by Eden"
@@ -1399,6 +1456,10 @@ msgstr "Δημόσια δωμάτια"
 #: pe/ui/multiplayer.cpp
 msgid "PUBLIC ROOMS"
 msgstr "ΔΗΜΟΣΙΑ ΔΩΜΑΤΙΑ"
+
+#: pe/ui/settings.cpp
+msgid "Put images in the wallpapers folder to show them here."
+msgstr "Βάλτε εικόνες στον φάκελο wallpapers για να εμφανιστούν εδώ."
 
 #: pe/ui/remote.cpp
 msgid "Queued"
@@ -1582,6 +1643,10 @@ msgstr "Αποθηκεύτηκαν {0}. Αντικαθιστούν της κον
 msgid "Saved. A display that cannot show 120 Hz stays at 60 Hz."
 msgstr "Αποθηκεύτηκε. Μια οθόνη χωρίς 120 Hz παραμένει στα 60 Hz."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Applies the next time ProsperoEden opens."
+msgstr "Αποθηκεύτηκε. Ισχύει την επόμενη φορά που θα ανοίξει το ProsperoEden."
+
 #: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Saved. Applies when a game starts."
 msgstr "Αποθηκεύτηκε. Ισχύει όταν ξεκινά ένα παιχνίδι."
@@ -1591,9 +1656,18 @@ msgstr "Αποθηκεύτηκε. Ισχύει όταν ξεκινά ένα πα
 msgid "Saved. Full quality uses four times the graphics memory for these textures and can run out above 1x."
 msgstr "Αποθηκεύτηκε. Η πλήρης ποιότητα θέλει τετραπλάσια μνήμη γραφικών για αυτές τις υφές και πάνω από 1x μπορεί να εξαντληθεί."
 
+#: pe/ui/settings.cpp
+msgid "Saved. Post-processing needs the Vulkan renderer."
+msgstr "Αποθηκεύτηκε. Η μεταεπεξεργασία χρειάζεται τη μηχανή απόδοσης Vulkan."
+
 #: pe/ui/browse.cpp
 msgid "Saved. Reopen ProsperoEden to use this folder."
 msgstr "Αποθηκεύτηκε. Ανοίξτε ξανά το ProsperoEden για να χρησιμοποιηθεί αυτός ο φάκελος."
+
+#. About the Update notices switch; homebrew.page is a site's name and stays as it is; About is the menu's last section (use its translation).
+#: pe/ui/settings.cpp
+msgid "Says when homebrew.page has a newer version. Off, only About names it."
+msgstr "Ενημερώνει όταν το homebrew.page έχει νεότερη έκδοση. Όταν είναι ανενεργό, την αναφέρουν μόνο οι Πληροφορίες."
 
 #: pe/ui/pairing.cpp
 msgid "Scan the code with your phone, or open the address below."
@@ -1665,6 +1739,10 @@ msgid "Several sources have this game. Which one should it come from?"
 msgstr "Αρκετές πηγές έχουν αυτό το παιχνίδι. Από ποια να ληφθεί;"
 
 #: pe/ui/settings.cpp
+msgid "Show an image of your own behind the menu."
+msgstr "Δείξτε μια δική σας εικόνα πίσω από το μενού."
+
+#: pe/ui/settings.cpp
 msgid "Show or hide the FPS overlay"
 msgstr "Εμφάνιση ή απόκρυψη της ένδειξης FPS"
 
@@ -1709,6 +1787,11 @@ msgstr "Ισπανικά (Λατινική Αμερική)"
 #: pe/ui/settings.cpp
 msgid "Speed"
 msgstr "Ταχύτητα"
+
+#. Settings > Performance: how fast a game may run, as a percentage of the console it was made for.
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Speed limit"
+msgstr "Όριο ταχύτητας"
 
 #. A DualSense button.
 #: pe/ui/game_options.cpp
@@ -1875,6 +1958,10 @@ msgstr "Η ενημέρωση δεν ολοκληρώθηκε"
 msgid "Theme"
 msgstr "Θέμα"
 
+#: pe/ui/settings.cpp
+msgid "Theme and launcher settings."
+msgstr "Ρυθμίσεις θέματος και εκκίνησης."
+
 #: pe/ui/save_sync.cpp
 msgid "This console and the server both have save data the other does not know. Which one should stay? The other is kept as a backup."
 msgstr "Η κονσόλα και ο διακομιστής έχουν αποθηκευμένα δεδομένα που η άλλη πλευρά δεν γνωρίζει. Ποια να μείνουν; Τα άλλα φυλάσσονται ως αντίγραφο ασφαλείας."
@@ -1957,6 +2044,11 @@ msgstr "Μη διαθέσιμο"
 msgid "Understood"
 msgstr "Κατάλαβα"
 
+#. A Speed limit choice: no limit at all (as fast as the console can).
+#: pe/ui/game_options.cpp, pe/ui/settings.cpp
+msgid "Unlimited"
+msgstr "Χωρίς όριο"
+
 #: pe/ui/pairing.cpp
 msgid "Unlink"
 msgstr "Αποσύνδεση"
@@ -1979,6 +2071,11 @@ msgstr "ΠΑΝΩ"
 #: pe/ui/launcher.cpp, pe/ui/update.cpp
 msgid "Update available"
 msgstr "Διαθέσιμη ενημέρωση"
+
+#. Settings switch: whether the app says at its start that a newer release of this app is listed (not game updates).
+#: pe/ui/settings.cpp
+msgid "Update notices"
+msgstr "Ειδοποιήσεις ενημερώσεων"
 
 #. Button: download and install the newer release of this app now.
 #: pe/ui/update.cpp
@@ -2006,6 +2103,10 @@ msgstr "Φίλτρο κλιμάκωσης"
 msgid "USA"
 msgstr "ΗΠΑ"
 
+#: pe/ui/settings.cpp
+msgid "Use another home screen, library and menu layout."
+msgstr "Χρησιμοποιήστε άλλη διάταξη για αρχική οθόνη, βιβλιοθήκη και μενού."
+
 #: pe/ui/browse.cpp
 msgid "Use extracted firmware NCA files. Choose the folder in Settings, Game files; restart the app after changing it."
 msgstr "Χρησιμοποιήστε εξαγμένα αρχεία NCA του firmware. Επιλέξτε τον φάκελο στις Ρυθμίσεις, Αρχεία παιχνιδιών και επανεκκινήστε την εφαρμογή μετά την αλλαγή."
@@ -2020,7 +2121,7 @@ msgid "Version {0}"
 msgstr "Έκδοση {0}"
 
 #. {0}: the newer release's number, for example 1.000.050; homebrew.page is a site's name and stays as it is.
-#: pe/ui/launcher.cpp
+#: pe/ui/browse.cpp, pe/ui/launcher.cpp
 msgid "Version {0} is on homebrew.page"
 msgstr "Η έκδοση {0} βρίσκεται στο homebrew.page"
 
@@ -2073,6 +2174,10 @@ msgstr "Αναμονή για {0}"
 #: pe/ui/remote.cpp
 msgid "Waiting to download"
 msgstr "Αναμονή για λήψη"
+
+#: pe/ui/settings.cpp
+msgid "Wallpaper"
+msgstr "Ταπετσαρία"
 
 #: pe/ui/settings.cpp
 msgid "What the FPS overlay's line says, and how the chip is drawn."
